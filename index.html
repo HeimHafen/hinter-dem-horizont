@@ -363,6 +363,21 @@ async function start(){
     cushion.position.set(x,1.56,-5.75);
     cushion.scale.set(.52,.31,.082);
     exterior.add(cushion);
+    const piping=new THREE.MeshStandardMaterial({color:0xa28150,roughness:.63});
+    const studs=new THREE.InstancedMesh(new THREE.SphereGeometry(.011,8,6),piping,36);
+    const stud=new THREE.Object3D();
+    for(let i=0;i<36;i++){
+      const angle=i*Math.PI*2/36;
+      stud.position.set(x+.519*Math.cos(angle),1.56+.308*Math.sin(angle),-5.722);
+      stud.updateMatrix();
+      studs.setMatrixAt(i,stud.matrix);
+    }
+    exterior.add(studs);
+    const seam=new THREE.Mesh(new THREE.TorusGeometry(1,.016,6,56),piping);
+    seam.rotation.x=-Math.PI/2;
+    seam.scale.set(.533,.29,.45);
+    seam.position.set(x,1.298,-5.55);
+    exterior.add(seam);
   }
   function ovalWalls(material){
     const width=3.37, depth=3.69, count=128;
@@ -392,8 +407,36 @@ async function start(){
       wall.receiveShadow=true;
       exterior.add(wall);
     }
+    const wainscot=new THREE.MeshStandardMaterial({color:0xd4c8ae,roughness:.59});
+    const panelFace=new THREE.MeshStandardMaterial({color:0xe3d8be,roughness:.67});
+    function curvedRail(start,end,y,radius,finish){
+      const points=Array.from({length:17},(_,i)=>{
+        const angle=start+(end-start)*i/16;
+        return new THREE.Vector3(Math.sin(angle)*(width-.076),y,-4+Math.cos(angle)*(depth-.076));
+      });
+      const curve=new THREE.CatmullRomCurve3(points);
+      exterior.add(new THREE.Mesh(new THREE.TubeGeometry(curve,16,radius,6,false),finish));
+    }
     band(.89,4.68,0,material);
+    band(.93,1.67,.023,wainscot);
     band(.89,1.04,.055,trim);
+    for(let i=0;i<16;i++){
+      const start=.35+i*(Math.PI*2-.70)/16+.035;
+      const end=.35+(i+1)*(Math.PI*2-.70)/16-.035;
+      const center=(start+end)/2;
+      if(Math.abs(center-Math.PI)<.29)continue;
+      for(const y of [1.13,1.55]){
+        curvedRail(start,end,y,.022,panelFace);
+        curvedRail(start+.011,end-.011,y+(y<1.3?.035:-.035),.008,gold);
+      }
+      for(const angle of [start,end]){
+        const stile=new THREE.Mesh(new THREE.BoxGeometry(.045,.45,.043),panelFace);
+        stile.position.set(Math.sin(angle)*(width-.076),1.34,-4+Math.cos(angle)*(depth-.076));
+        stile.rotation.y=angle;
+        stile.castShadow=true;
+        exterior.add(stile);
+      }
+    }
     band(1.74,1.80,.047,trim);
     band(1.715,1.74,.034,trim);
     band(1.80,1.82,.058,trim);
@@ -477,6 +520,34 @@ async function start(){
         brush.lineWidth=2;
         brush.stroke();
       }
+      // Fine pile variation over the dyed ornament, with a continuous vine border.
+      for(let i=0;i<64;i++){
+        const angle=i*Math.PI/32;
+        brush.save();
+        brush.rotate(angle);
+        brush.beginPath();
+        brush.moveTo(286,-14);
+        brush.quadraticCurveTo(302,0,286,14);
+        brush.strokeStyle='#9c8965';
+        brush.lineWidth=1.4;
+        brush.stroke();
+        for(const side of [-1,1]){
+          brush.beginPath();
+          brush.ellipse(294,side*5,2.6,6,side*.65,0,Math.PI*2);
+          brush.fillStyle='#a89672';
+          brush.fill();
+        }
+        brush.restore();
+      }
+      const pile=brush.getImageData(0,0,768,768);
+      let fiberSeed=1349;
+      for(let i=0;i<pile.data.length;i+=4){
+        fiberSeed=(Math.imul(fiberSeed,1664525)+1013904223)>>>0;
+        const row=Math.floor(i/(768*4));
+        const variation=(fiberSeed/4294967296-.5)*12+2*Math.sin(row*2.4);
+        for(let channel=0;channel<3;channel++)pile.data[i+channel]+=variation;
+      }
+      brush.putImageData(pile,0,0);
       const weave=new THREE.CanvasTexture(textile);
       weave.colorSpace=THREE.SRGBColorSpace;
       weave.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
@@ -695,23 +766,96 @@ async function start(){
       scene.add(bounce);
       windowLight.position.set(0,2.9,-6.95);
       scene.add(windowLight);
-      oval(0,1.68,-6.75,.57,.33,.075,walnut);
-      oval(0,1.65,-6.75,.585,.345,.025,gold);
-      for(const x of [-.36,.36])for(const z of [-6.9,-6.6]){
-        const leg=new THREE.Mesh(new THREE.CylinderGeometry(.045,.022,.71,12),gold);
-        leg.position.set(x,1.28,z);
+      const daylight=document.createElement('canvas');
+      daylight.width=192;daylight.height=256;
+      const lightBrush=daylight.getContext('2d');
+      lightBrush.filter='blur(6px)';
+      lightBrush.fillStyle='rgba(226,237,255,.19)';
+      for(let row=0;row<4;row++)for(let column=0;column<3;column++){
+        lightBrush.fillRect(20+column*52,20+row*55,45,48);
+      }
+      const lightPattern=new THREE.CanvasTexture(daylight);
+      lightPattern.colorSpace=THREE.SRGBColorSpace;
+      const reflectedWindow=new THREE.Mesh(new THREE.PlaneGeometry(1.75,2.35),
+        new THREE.MeshBasicMaterial({
+          map:lightPattern,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
+        }));
+      reflectedWindow.rotation.set(-Math.PI/2,0,-.25);
+      reflectedWindow.position.set(.52,.921,-5.45);
+      exterior.add(reflectedWindow);
+      const shadowCanvas=document.createElement('canvas');
+      shadowCanvas.width=shadowCanvas.height=128;
+      const shade=shadowCanvas.getContext('2d');
+      const falloff=shade.createRadialGradient(64,64,4,64,64,64);
+      falloff.addColorStop(0,'rgba(19,12,8,.57)');
+      falloff.addColorStop(1,'rgba(19,12,8,0)');
+      shade.fillStyle=falloff;
+      shade.fillRect(0,0,128,128);
+      const shadowMaterial=new THREE.MeshBasicMaterial({
+        map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1
+      });
+      for(const [x,z,w,d] of [[-1.83,-5.55,1.63,1.02],[1.83,-5.55,1.63,1.02],[0,-6.75,1.42,.92]]){
+        const shadow=new THREE.Mesh(new THREE.PlaneGeometry(w,d),shadowMaterial);
+        shadow.rotation.x=-Math.PI/2;
+        shadow.position.set(x,.920,z);
+        exterior.add(shadow);
+      }
+      // A period-inspired pedestal table with a moulded apron and three swept feet.
+      oval(0,1.668,-6.75,.59,.35,.048,walnut);
+      oval(0,1.636,-6.75,.57,.331,.026,gold);
+      oval(0,1.589,-6.75,.53,.31,.086,walnut);
+      oval(0,1.15,-6.75,.075,.075,.43,walnut);
+      for(const [y,r,h] of [[1.01,.115,.075],[1.22,.093,.045],[1.38,.103,.065],[1.49,.17,.11]]){
+        oval(0,y,-6.75,r,r,h,walnut);
+      }
+      for(let foot=0;foot<3;foot++){
+        const angle=foot*Math.PI*2/3;
+        const dx=Math.cos(angle),dz=Math.sin(angle);
+        const profile=new THREE.CatmullRomCurve3([
+          new THREE.Vector3(dx*.07,1.12,-6.75+dz*.07),
+          new THREE.Vector3(dx*.17,1.04,-6.75+dz*.17),
+          new THREE.Vector3(dx*.34,.965,-6.75+dz*.34)
+        ]);
+        const leg=new THREE.Mesh(new THREE.TubeGeometry(profile,16,.042,12,false),walnut);
+        leg.castShadow=true;
         exterior.add(leg);
+        oval(dx*.34,.95,-6.75+dz*.34,.048,.048,.066,gold);
       }
-      obstacles.push({x:0,z:-6.75,w:1.17,d:.69});
-      for(const x of [-2.25,2.25]){
-        framedPanel(x,3.2,-6.54,.71,.93,gold);
-        surface(x,3.2,-6.56,.66,.88,.05,walnut);
-        const painting=new THREE.Mesh(new THREE.PlaneGeometry(.65,.87),
-          new THREE.MeshBasicMaterial({map:view,color:0xc1a47f}));
-        painting.position.set(x,3.2,-6.53);
-        exterior.add(painting);
+      obstacles.push({x:0,z:-6.75,w:1.18,d:.72});
+
+      // Hang the frames tangentially against the curved wall.
+      for(const side of [-1,1]){
+        const angle=Math.PI+side*.69;
+        const frame=new THREE.Group();
+        frame.position.set(Math.sin(angle)*3.30,3.12,-4+Math.cos(angle)*3.62);
+        frame.rotation.y=angle-Math.PI;
+        function frameLayer(w,h,d,z,material){
+          const part=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+          part.position.z=z;
+          frame.add(part);
+        }
+        frameLayer(.81,1.0,.055,0,walnut);
+        frameLayer(.77,.96,.04,.031,gold);
+        frameLayer(.70,.89,.024,.051,walnut);
+        const artwork=new THREE.Mesh(new THREE.PlaneGeometry(.64,.83),
+          new THREE.MeshStandardMaterial({map:view,color:0xb9a07f,roughness:.92}));
+        artwork.position.z=.066;
+        frame.add(artwork);
+        exterior.add(frame);
       }
-      surface(0,4.06,-7.35,2.43,.21,.17,gold);
+
+      const valance=new THREE.PlaneGeometry(2.77,.48,80,12);
+      const clothPoints=valance.attributes.position;
+      for(let i=0;i<clothPoints.count;i++){
+        const x=clothPoints.getX(i),v=(clothPoints.getY(i)+.24)/.48;
+        const lower=3.99-.21*(.5+.5*Math.cos(x*6.8));
+        clothPoints.setXYZ(i,x,lower+(4.18-lower)*v,-7.14+.026*Math.cos(x*32)+.07*Math.sin(Math.PI*v));
+      }
+      valance.computeVertexNormals();
+      const swag=new THREE.Mesh(valance,drape);
+      exterior.add(swag);
+      surface(0,4.19,-7.17,2.83,.067,.16,walnut);
+
     }
     if(index===1||index===3){
       oval(room.x,1.57,-4.5,.63,.46,.09,walnut);

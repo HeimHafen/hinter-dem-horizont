@@ -289,7 +289,7 @@ async function start(){
   const rooms=[
     {name:'State Dining Room',x:-14.4,color:0x9f937c},
     {name:'Red Room',x:-7.2,color:0x88393d},
-    {name:'Blue Room',x:0,color:0x405d85},
+    {name:'Oval Office',x:0,color:0x405d85},
     {name:'Green Room',x:7.2,color:0x567062},
     {name:'East Room',x:14.4,color:0xcbb693}
   ];
@@ -478,7 +478,7 @@ async function start(){
       m.map.colorSpace=THREE.SRGBColorSpace;
       m.map.wrapS=m.map.wrapT=THREE.RepeatWrapping;
       m.map.repeat.set(21,4);
-      m.color.setHex(0x587da9);
+      m.color.setHex(0xd7be96);
       m.roughness=.76;
     }
     openingWall(room.x,0,7.2,1.74,m);
@@ -578,13 +578,48 @@ async function start(){
     surface(room.x,2.61,-7.83,6.6,2.75,.09,m);
     for(const side of [-1,1]){
       const x=room.x+side*(index===2?1.83:2.48);
-      if(index===2)blueSettee(x);
+      if(index===2){
+        const linen=new THREE.MeshStandardMaterial({color:0xcdb894,roughness:.94});
+        grain(linen,145,.13);
+        const sofaX=side*2.10;
+        function upholstered(px,y,z,w,h,d,rx=0){
+          const cushion=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),linen);
+          cushion.scale.set(w,h,d);
+          cushion.position.set(px,y,z);
+          cushion.rotation.z=rx;
+          cushion.receiveShadow=true;
+          cushion.castShadow=true;
+          exterior.add(cushion);
+        }
+        surface(sofaX,1.07,-3.59,.79,.29,2.10,linen);
+        for(const z of [-4.24,-3.59,-2.94]){
+          upholstered(sofaX,1.26,z,.415,.145,.355);
+          upholstered(sofaX+side*.32,1.53,z,.145,.36,.355,-side*.17);
+        }
+        for(const z of [-4.61,-2.57]){
+          upholstered(sofaX,1.37,z,.46,.165,.15);
+          for(const dx of [-.29,.29])surface(sofaX+dx,.98,z,.095,.17,.10,walnut);
+        }
+        obstacles.push({x:sofaX,z:-3.59,w:1.03,d:2.32});
+        const tableZ=-1.99;
+        oval(sofaX,1.52,tableZ,.37,.29,.072,walnut);
+        oval(sofaX,1.20,tableZ,.08,.08,.60,walnut);
+        oval(sofaX,1.59,tableZ,.12,.12,.065,brass);
+        oval(sofaX,1.75,tableZ,.10,.10,.30,trim);
+        const shadeMaterial=new THREE.MeshStandardMaterial({
+          color:0xf5e9d4,emissive:0xc8a477,emissiveIntensity:.27,roughness:.88
+        });
+        const shade=new THREE.Mesh(new THREE.CylinderGeometry(.16,.285,.29,40),shadeMaterial);
+        shade.position.set(sofaX,2.01,tableZ);
+        exterior.add(shade);
+        obstacles.push({x:sofaX,z:tableZ,w:.74,d:.58});
+      }
       else{
         surface(x,1.06,-5.55,1.19,.34,.67,walnut);
         surface(x,1.27,-5.55,1.13,.15,.6,m);
         surface(x,1.47,-5.83,1.13,.39,.14,m);
       }
-      obstacles.push({x,z:-5.55,w:1.19,d:.67});
+      if(index!==2)obstacles.push({x,z:-5.55,w:1.19,d:.67});
       surface(x,3.13,-7.66,.13,.32,.15,brass);
       surface(x,3.28,-7.60,.18,.21,.18,glow);
     }
@@ -608,7 +643,7 @@ async function start(){
     surface(room.x,3.15,-7.65,1.06,1.22,.10,gold);
     surface(room.x,3.15,-7.58,.88,1.04,.06,walnut);
     }
-    chandelierFixture(room.x,-4,index===2?10:6);
+    if(index!==2)chandelierFixture(room.x,-4,6);
     if(index===2){
       const drape=new THREE.MeshPhysicalMaterial({
         color:0xc6a46e,roughness:.83,sheen:.65,sheenColor:0xcba36c,sheenRoughness:.63
@@ -794,7 +829,7 @@ async function start(){
       const shadowMaterial=new THREE.MeshBasicMaterial({
         map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1
       });
-      for(const [x,z,w,d] of [[-1.83,-5.55,1.63,1.02],[1.83,-5.55,1.63,1.02],[0,-5.22,2.12,1.52]]){
+      for(const [x,z,w,d] of [[-2.10,-3.59,1.25,2.55],[2.10,-3.59,1.25,2.55],[0,-5.22,2.12,1.52],[0,-2.72,.87,1.21]]){
         const shadow=new THREE.Mesh(new THREE.PlaneGeometry(w,d),shadowMaterial);
         shadow.rotation.x=-Math.PI/2;
         shadow.position.set(x,.920,z);
@@ -846,7 +881,7 @@ async function start(){
       }
       obstacles.push({x:room.x,z:-4.65,w:2.35,d:1.30});
     }
-    const chandelier=new THREE.PointLight(0xffe7c6,index===2?6.5:21,8);
+    const chandelier=new THREE.PointLight(0xffe7c6,index===2?13:21,8);
     chandelier.position.set(room.x,3.77,-4);
     scene.add(chandelier);
   }
@@ -1033,6 +1068,11 @@ async function start(){
     }
     obstacles.push({x,z,w:1.829,d:1.219});
   }
+  surface(0,1.325,-2.72,.62,.075,.98,walnut);
+  for(const x of [-.25,.25])for(const z of [-3.12,-2.32]){
+    surface(x,1.106,z,.062,.43,.062,walnut);
+  }
+  obstacles.push({x:0,z:-2.72,w:.62,d:.98});
   resoluteDesk(0,-5.22);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);
   const keys=new Set(),touchKeys=new Map();

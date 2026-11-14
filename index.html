@@ -924,21 +924,21 @@ async function start(){
         for(let i=0;i<vertices.count;i++){
           const u=vertices.getX(i)+.5;
           const v=vertices.getY(i)+.5;
-          const gathering=.43+.56*Math.pow(Math.abs(v-.47),.63);
-          vertices.setXYZ(i,side*(1.19+(u-.5)*gathering+.12*Math.sin(v*Math.PI)),1.19+v*2.8+.048*Math.sin(u*31+side)*(1-v)**3,
-            -7.30+(.042+.032*Math.abs(v-.47))*Math.sin(u*15*Math.PI+v*2.1+.35*Math.sin(u*17))+ .013*Math.sin(u*30*Math.PI+v*3)+.10*Math.sin(v*Math.PI));
+          const gathering=.40+.63*Math.hypot(v-.47,.045);
+          vertices.setXYZ(i,side*(1.19+(u-.5)*gathering+.12*Math.sin(v*Math.PI)),1.10+v*2.96+.048*Math.sin(u*31+side)*(1-v)**3,
+            -7.03+(.042+.032*Math.abs(v-.47))*Math.sin(u*15*Math.PI+v*2.1+.35*Math.sin(u*17))+ .013*Math.sin(u*30*Math.PI+v*3)+.10*Math.sin(v*Math.PI));
         }
         cloth.computeVertexNormals();
         const curtain=new THREE.Mesh(cloth,drape);
         curtain.receiveShadow=true;
         exterior.add(curtain);
         const cord=new THREE.CatmullRomCurve3([
-          new THREE.Vector3(side*.99,2.63,-7.28),
-          new THREE.Vector3(side*1.19,2.53,-7.09),
-          new THREE.Vector3(side*1.43,2.61,-7.22)
+          new THREE.Vector3(side*.99,2.56,-7.02),
+          new THREE.Vector3(side*1.19,2.43,-6.84),
+          new THREE.Vector3(side*1.43,2.54,-6.97)
         ]);
         exterior.add(new THREE.Mesh(new THREE.TubeGeometry(cord,16,.016,8,false),gold));
-        oval(side*1.43,2.46,-7.20,.035,.035,.22,gold);
+        oval(side*1.43,2.40,-6.95,.035,.035,.22,gold);
       }
       const windowLight=new THREE.PointLight(0xd1e1ff,7,6);
       const bounce=new THREE.PointLight(0xffdfb2,1.15,4);
@@ -1001,17 +1001,33 @@ async function start(){
         exterior.add(frame);
       }
 
-      const valance=new THREE.PlaneGeometry(2.77,.48,80,12);
-      const clothPoints=valance.attributes.position;
-      for(let i=0;i<clothPoints.count;i++){
-        const x=clothPoints.getX(i),v=(clothPoints.getY(i)+.24)/.48;
-        const lower=3.99-.21*(.5+.5*Math.cos(x*6.8));
-        clothPoints.setXYZ(i,x,lower+(4.18-lower)*v,-7.14+.026*Math.cos(x*32)+.07*Math.sin(Math.PI*v));
+      // Each swag hangs between two gathers and sits in front of the window trim.
+      const hemMaterial=new THREE.MeshStandardMaterial({color:0x9e773c,roughness:.82});
+      for(let panel=0;panel<5;panel++){
+        const geometry=new THREE.PlaneGeometry(1,1,28,20);
+        const points=geometry.attributes.position;
+        function fabricPoint(u,v){
+          const sag=Math.sin(Math.PI*u)**.85;
+          const y=4.19-(1-v)*(.075+.32*sag);
+          const depth=.045*Math.sin((1-v)*Math.PI*8)*sag+.09*(1-v)*sag;
+          return new THREE.Vector3(-1.43+(panel+u)*.572,y,-6.88+depth);
+        }
+        for(let i=0;i<points.count;i++){
+          const point=fabricPoint(points.getX(i)+.5,points.getY(i)+.5);
+          points.setXYZ(i,point.x,point.y,point.z);
+        }
+        geometry.computeVertexNormals();
+        const swag=new THREE.Mesh(geometry,drape);
+        swag.castShadow=true;
+        swag.receiveShadow=true;
+        exterior.add(swag);
+        const hem=new THREE.CatmullRomCurve3(
+          Array.from({length:25},(_,i)=>fabricPoint(i/24,0))
+        );
+        exterior.add(new THREE.Mesh(new THREE.TubeGeometry(hem,28,.009,6,false),hemMaterial));
       }
-      valance.computeVertexNormals();
-      const swag=new THREE.Mesh(valance,drape);
-      exterior.add(swag);
-      surface(0,4.19,-7.17,2.83,.067,.16,walnut);
+      surface(0,4.205,-6.94,2.92,.052,.15,walnut);
+
 
     }
     if(index===1||index===3){

@@ -1212,11 +1212,77 @@ async function start(){
     }
     obstacles.push({x,z,w:1.829,d:1.219});
   }
-  surface(0,1.325,-2.72,.62,.075,.98,walnut);
-  for(const x of [-.25,.25])for(const z of [-3.12,-2.32]){
-    surface(x,1.106,z,.062,.43,.062,walnut);
+  {
+    const z=-2.72;
+    const tableFinish=new THREE.MeshPhysicalMaterial({
+      map:veneer,roughness:.39,clearcoat:.33,clearcoatRoughness:.36
+    });
+    const edge=new THREE.Shape();
+    edge.moveTo(-.23,-.49);
+    edge.lineTo(.23,-.49);edge.quadraticCurveTo(.31,-.49,.31,-.41);
+    edge.lineTo(.31,.41);edge.quadraticCurveTo(.31,.49,.23,.49);
+    edge.lineTo(-.23,.49);edge.quadraticCurveTo(-.31,.49,-.31,.41);
+    edge.lineTo(-.31,-.41);edge.quadraticCurveTo(-.31,-.49,-.23,-.49);
+    edge.closePath();
+    const slab=new THREE.ExtrudeGeometry(edge,{
+      depth:.026,bevelSize:.009,bevelThickness:.009,bevelSegments:3
+    });
+    const uv=slab.attributes.uv,points=slab.attributes.position;
+    for(let i=0;i<uv.count;i++)uv.setXY(i,points.getX(i)/.64+.5,points.getY(i)+.5);
+    const top=new THREE.Mesh(slab,tableFinish);
+    top.rotation.x=-Math.PI/2;
+    top.position.set(0,1.32,z);
+    top.castShadow=top.receiveShadow=true;
+    exterior.add(top);
+    for(const side of [-1,1]){
+      surface(side*.263,1.273,z,.039,.082,.85,walnut);
+      surface(0,1.273,z+side*.424,.51,.082,.033,walnut);
+      for(const end of [-1,1]){
+        const curve=new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side*.241,1.29,z+end*.392),
+          new THREE.Vector3(side*.271,1.19,z+end*.411),
+          new THREE.Vector3(side*.242,1.035,z+end*.39),
+          new THREE.Vector3(side*.255,.92,z+end*.416)
+        ]);
+        const leg=new THREE.Mesh(new THREE.TubeGeometry(curve,18,.026,10,false),walnut);
+        leg.castShadow=true;
+        exterior.add(leg);
+        oval(side*.255,.907,z+end*.416,.032,.033,.031,brass);
+      }
+    }
+    const porcelainVase=new THREE.MeshPhysicalMaterial({
+      color:0x26445a,roughness:.32,clearcoat:.58
+    });
+    const vase=new THREE.Mesh(new THREE.LatheGeometry([
+      [.057,0],[.075,.024],[.093,.079],[.086,.114],[.067,.137],[.071,.146],[.056,.146],[.055,.116]
+    ].map(([r,y])=>new THREE.Vector2(r,y)),36),porcelainVase);
+    vase.position.set(0,1.355,z);
+    exterior.add(vase);
+    const leafGeometry=new THREE.SphereGeometry(1,9,6);
+    const leafMaterial=new THREE.MeshStandardMaterial({color:0x435938,roughness:.78});
+    const petals=[0xeee2bb,0xc8a64d,0x7586ab].map(color=>new THREE.MeshStandardMaterial({color,roughness:.84}));
+    for(let i=0;i<15;i++){
+      const angle=i*2.39996;
+      const spread=.04+(i%5)*.024;
+      const tip=new THREE.Vector3(Math.cos(angle)*spread,1.54+(i%4)*.028,z+Math.sin(angle)*spread);
+      const stem=new THREE.LineCurve3(new THREE.Vector3(tip.x*.25,1.45,z+(tip.z-z)*.25),tip);
+      exterior.add(new THREE.Mesh(new THREE.TubeGeometry(stem,1,.003,5,false),leafMaterial));
+      for(let j=0;j<5;j++){
+        const a=j*Math.PI*2/5+angle;
+        const petal=new THREE.Mesh(leafGeometry,petals[i%3]);
+        petal.scale.set(.018,.009,.011);
+        petal.rotation.y=-a;
+        petal.position.set(tip.x+.014*Math.cos(a),tip.y,tip.z+.014*Math.sin(a));
+        exterior.add(petal);
+      }
+      const leaf=new THREE.Mesh(leafGeometry,leafMaterial);
+      leaf.scale.set(.048,.009,.017);
+      leaf.rotation.y=-angle;
+      leaf.position.set(tip.x*.66,tip.y-.055,z+(tip.z-z)*.66);
+      exterior.add(leaf);
+    }
+    obstacles.push({x:0,z,w:.64,d:1.0});
   }
-  obstacles.push({x:0,z:-2.72,w:.62,d:.98});
   resoluteDesk(0,-5.22);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);
   const keys=new Set(),touchKeys=new Map();

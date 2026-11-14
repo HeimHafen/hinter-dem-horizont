@@ -169,6 +169,62 @@ async function start(){
   }
   dressGlass(glass);
 
+  // Exterior mouldings follow the existing building footprint and doorway.
+  const limestoneShadow=new THREE.MeshStandardMaterial({color:0xb8ae9d,roughness:.88});
+  const paintedSash=new THREE.MeshStandardMaterial({color:0xece4d6,roughness:.55});
+  for(const [y,h,d] of [[.94,.17,.23],[4.57,.12,.24],[5.02,.20,.35],
+    [9.46,.12,.23],[13.17,.16,.35],[13.69,.22,.47],[14.1,.16,.48]]){
+    if(y<4.2){
+      for(const side of [-1,1])surface(side*12.50,y,12.18,21.7,h,d,stone);
+    }else surface(0,y,12.18,46.7,h,d,stone);
+    for(const side of [-1,1])surface(side*23.55,y,0,d,h,24.35,stone);
+  }
+  for(const side of [-1,1]){
+    for(let x=21.5;x<=23.2;x+=.82){
+      for(let row=0;row<9;row++)
+        surface(side*x,1.47+row*1.31,12.27,row%2?.54:.69,.26,.16,stone);
+    }
+    for(const x of [3.35,4.55]){
+      surface(side*x,3.39,11.98,.21,4.70,.23,stone);
+      surface(side*x,1.15,12.04,.31,.18,.31,stone);
+      surface(side*x,5.68,12.04,.33,.14,.31,stone);
+    }
+  }
+  for(let x=-22.8;x<=22.8;x+=.46){
+    if(Math.abs(x)<7.9)continue;
+    surface(x,13.53,12.28,.16,.21,.24,stone);
+  }
+  for(let x=-20;x<=20;x+=5)for(const [y,h] of [[2.75,2.85],[7.8,2.75],[11.92,1.85]]){
+    if(x===0&&y<3)continue;
+    surface(x,y,12.251,1.76,h,.045,limestoneShadow);
+    surface(x,y,12.281,1.58,h-.15,.034,glass);
+    for(const offset of [-.78,-.26,.26,.78])
+      surface(x+offset,y,12.318,.049,h-.11,.047,paintedSash);
+    for(const offset of [-.47,-.235,0,.235,.47])
+      surface(x,y+h*offset,12.32,1.59,offset===0?.084:.044,.048,paintedSash);
+    surface(x,y-h/2-.066,12.36,2.02,.111,.32,stone);
+    if(y!==7.8)continue;
+    for(const side of [-1,1]){
+      const pediment=new THREE.Mesh(new THREE.BoxGeometry(1.15,.083,.27),stone);
+      pediment.position.set(x+side*.53,y+h/2+.33,12.35);
+      pediment.rotation.z=-side*.28;
+      pediment.castShadow=pediment.receiveShadow=true;
+      exterior.add(pediment);
+    }
+  }
+  // Continue the stone courses around the rear while leaving the passage geometry intact.
+  for(const [y,h,d] of [[1.02,.16,.18],[5.02,.18,.27],[9.46,.12,.21],[13.69,.22,.33]])
+    surface(0,y,-12.16,46.7,h,d,stone);
+  for(const x of [-20,-15,-10,-5,0,5,10,15,20])
+    for(const [y,h] of [[2.75,2.54],[7.8,2.72],[11.92,1.76]]){
+      surface(x,y,-12.25,1.92,h+.22,.12,stone);
+      surface(x,y,-12.33,1.61,h,.05,glass);
+      for(const offset of [-.79,-.263,.263,.79])
+        surface(x+offset,y,-12.37,.047,h,.04,paintedSash);
+      for(const offset of [-.48,-.24,0,.24,.48])
+        surface(x,y+h*offset,-12.37,1.62,.046,.04,paintedSash);
+      surface(x,y-h/2-.1,-12.38,2.04,.13,.24,stone);
+    }
   function grain(material,scale,strength){
     material.customProgramCacheKey=()=>`grain-${scale}-${strength}`;
     material.onBeforeCompile=shader=>{

@@ -4,7 +4,7 @@
 <title>Hinter dem Horizont · Weißes Haus</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#202923;color:#fff7e4;font:16px system-ui}
-canvas{display:block;touch-action:none}header{position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;pointer-events:none;background:#17201ee8;padding:12px 16px;border-radius:12px}h1{font:24px Georgia;margin:0 0 5px}
+canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overflow-wrap:anywhere;position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;pointer-events:none;background:#17201ee8;padding:12px 16px;border-radius:12px}h1{font:24px Georgia;margin:0 0 5px}
 #controls{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:16px;display:grid;grid-template-columns:repeat(3,54px);gap:5px}button{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;height:54px;background:#18211eea;color:inherit;border:1px solid #b4ac95;border-radius:12px;font:inherit;touch-action:none}#gate{position:fixed;right:16px;bottom:max(25px,env(safe-area-inset-bottom));padding:0 14px}
 </style>
 <header><h1>Hinter dem Horizont</h1><div id="place">Weißes Haus wird geladen …</div></header>
@@ -32,7 +32,7 @@ async function start(){
   const sun=new THREE.DirectionalLight(0xffebd8,2.2);
   sun.position.set(-14,12,6);
   scene.add(sun);
-  const {scene:model}=await new GLTFLoader().loadAsync('./Weisses-Haus.glb?v=2');
+  const {scene:model}=await new GLTFLoader().loadAsync('./Weisses-Haus-Innen.glb');
   scene.add(model);
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -239,7 +239,7 @@ async function start(){
   }
   // The original exterior model uses a solid core. Replace it with a shell
   // around the visitor gallery and keep the upper exterior mass.
-  model.getObjectByName('Cube').visible=false;
+  model.getObjectByName('ResidenceSolidCore').visible=false;
   surface(0,9.35,-2,47,9.3,20,stone);
   surface(0,2.35,-11.85,47,4.7,.3,stone);
   for(const side of [-1,1])surface(side*23.35,2.35,-2,.3,4.7,20,stone);
@@ -263,7 +263,7 @@ async function start(){
     surface(x,3.78,z,opening,1.82,.23,material);
     surface(x,3.38,z,opening+.36,.14,.4,stone);
   }
-  model.getObjectByName('Cube.004').visible=false;
+  model.getObjectByName('ResidenceOriginalPlinth').visible=false;
   surface(0,.42,0,47.6,.84,24.6,stone);
   surface(0,.82,0,36,.14,16,marble);
   const floorCanvas=document.createElement('canvas');
@@ -390,10 +390,26 @@ async function start(){
       surface(0,2.65,-7.49,1.41,2.43,.07,sash);
       for(const x of [-.46,0,.46])surface(x,2.65,-7.441,.032,2.43,.04,trim);
       for(const y of [1.89,2.65,3.41])surface(0,y,-7.441,1.41,.031,.04,trim);
-      for(const side of [-1,1])for(let i=0;i<6;i++){
-        const x=side*(.74+i*.075);
-        surface(x,2.61,-7.35+Math.sin(i*1.7)*.04,.11,2.84,.14,drape);
+      drape.side=THREE.DoubleSide;
+      for(const side of [-1,1]){
+        const cloth=new THREE.PlaneGeometry(1,1,48,26);
+        const vertices=cloth.getAttribute('position');
+        for(let i=0;i<vertices.count;i++){
+          const u=vertices.getX(i)+.5;
+          const v=vertices.getY(i)+.5;
+          const gathering=.69+.19*Math.cos(v*Math.PI*2);
+          vertices.setXYZ(i,side*(1.12+(u-.5)*gathering),1.19+v*2.8,
+            -7.30+.067*Math.sin(u*12*Math.PI+v*.8)+.15*Math.sin(v*Math.PI));
+        }
+        cloth.computeVertexNormals();
+        const curtain=new THREE.Mesh(cloth,drape);
+        curtain.receiveShadow=true;
+        exterior.add(curtain);
+        surface(side*1.12,2.53,-7.24,.43,.054,.22,gold);
       }
+      const windowLight=new THREE.PointLight(0xc4dcff,15,6);
+      windowLight.position.set(0,2.9,-6.95);
+      scene.add(windowLight);
       surface(0,4.06,-7.35,2.43,.21,.17,gold);
     }
     if(index===1||index===3){

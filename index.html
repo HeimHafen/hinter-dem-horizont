@@ -1124,20 +1124,31 @@ async function start(){
       block(p,.115,0,.533,.037,1.129,carved);
       for(const end of [-1,1]){
         const face=end*.561;
-        for(let row=0;row<3;row++){
-          const y=.221+row*.143;
-          block(p,y,face,.359,.128,.025,recess);
-          block(p,y,face+end*.014,.322,.099,.021);
-          if(end<0){
+        if(end<0){
+          for(let row=0;row<3;row++){
+            const y=.221+row*.143;
+            block(p,y,face,.359,.128,.025,recess);
+            block(p,y,face-.014,.322,.099,.021);
             bead([[p-.049,y+.013,-.589],[p-.036,y-.013,-.601],
               [p,y-.025,-.606],[p+.036,y-.013,-.601],[p+.049,y+.013,-.589]],.006,hardware);
-          }else{
-            for(const sign of [-1,1]){
-              bead(Array.from({length:15},(_,i)=>{
-                const a=i*.43,r=.046*(1-i/17);
-                return [p+sign*(.047+r*Math.cos(a)),y+r*.76*Math.sin(a),.59];
-              }),.005);
+          }
+        }else{
+          block(p,.373,.568,.363,.477,.035,recess);
+          block(p,.373,.589,.329,.439,.019);
+          for(const [radius,bottom] of [[.143,.175],[.126,.194]]){
+            const arch=[[p-radius,bottom,.605],[p-radius,.442,.605]];
+            for(let step=1;step<=16;step++){
+              const angle=Math.PI*(1-step/16);
+              arch.push([p+radius*Math.cos(angle),.442+.115*Math.sin(angle),.605]);
             }
+            arch.push([p+radius,bottom,.605],[p,bottom,.605],[p-radius,bottom,.605]);
+            bead(arch,.0045);
+          }
+          for(let i=0;i<13;i++){
+            const angle=Math.PI*i/12;
+            const boss=part(new THREE.SphereGeometry(.008,8,6),carved,
+              p+.143*Math.cos(angle),.442+.115*Math.sin(angle),.609);
+            boss.scale.set(.85,1.2,.62);
           }
         }
         for(const trimX of [p-.213,p+.213]){
@@ -1153,6 +1164,16 @@ async function start(){
       for(const trimZ of [-.48,0,.48])block(flank,.4,trimZ,.022,.46,.028,carved);
     }
     block(0,.659,0,1.728,.076,1.107);
+    block(0,.658,.561,1.71,.061,.027,recess);
+    for(const y of [.626,.69])block(0,y,.581,1.69,.008,.013,carved);
+    for(let i=0;i<23;i++){
+      const x=(i-11)*.071;
+      for(const side of [-1,1]){
+        bead([[x,.653,.58],[x+side*.017,.671,.591],
+          [x+side*.029,.659,.59],[x+side*.019,.645,.584]],.004);
+      }
+    }
+
     block(0,.388,.537,.709,.461,.037,recess);
     block(0,.388,.56,.644,.405,.023);
     for(const side of [-1,1]){

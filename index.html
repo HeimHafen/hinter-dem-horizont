@@ -1154,13 +1154,21 @@ async function start(){
     block(0,.445,chairZ,.60,.085,.52,oak);
     const cushion=part(new THREE.SphereGeometry(1,32,20),chairLeather,0,.506,chairZ);
     cushion.scale.set(.293,.067,.246);
-    const back=part(new THREE.SphereGeometry(1,40,28),chairLeather,0,.854,chairZ-.235);
+    const backGeometry=new THREE.SphereGeometry(1,64,48);
+    const backPoints=backGeometry.attributes.position;
+    for(let i=0;i<backPoints.count;i++){
+      const x=backPoints.getX(i),y=backPoints.getY(i);
+      backPoints.setX(i,Math.sign(x)*Math.abs(x)**.63);
+      backPoints.setY(i,Math.sign(y)*Math.abs(y)**.68);
+    }
+    backGeometry.computeVertexNormals();
+    const back=part(backGeometry,chairLeather,0,.854,chairZ-.235);
     back.scale.set(.315,.405,.085);
     for(let row=0;row<5;row++){
       for(let column=-2;column<=2;column++){
         const buttonX=column*.092+(row%2)*.037;
         const dy=(row-2)*.123;
-        const front=.085*Math.sqrt(1-(buttonX/.315)**2-(dy/.405)**2);
+        const front=.085*Math.sqrt(1-(Math.abs(buttonX)/.315)**(2/.63)-(Math.abs(dy)/.405)**(2/.68));
         const button=part(new THREE.SphereGeometry(.012,10,8),chairLeather,
           buttonX,.854+dy,chairZ-.235+front);
         button.scale.z=.46;
@@ -1318,11 +1326,11 @@ async function start(){
     edge.lineTo(-.31,-.41);edge.quadraticCurveTo(-.31,-.49,-.23,-.49);
     edge.closePath();
     const slab=new THREE.ExtrudeGeometry(edge,{
-      depth:.026,bevelSize:.009,bevelThickness:.009,bevelSegments:3
+      depth:.026,bevelSize:.009,bevelThickness:.009,bevelSegments:3,material:0,extrudeMaterial:1
     });
     const uv=slab.attributes.uv,points=slab.attributes.position;
     for(let i=0;i<uv.count;i++)uv.setXY(i,points.getX(i)/.64+.5,points.getY(i)+.5);
-    const top=new THREE.Mesh(slab,tableFinish);
+    const top=new THREE.Mesh(slab,[tableFinish,walnut]);
     top.rotation.x=-Math.PI/2;
     top.position.set(0,1.32,z);
     top.castShadow=top.receiveShadow=true;
@@ -1409,9 +1417,9 @@ async function start(){
     const uv=cloth.attributes.uv;
     for(let i=0;i<points.count;i++){
       const u=uv.getX(i),v=uv.getY(i);
-      const spread=.22+.35*Math.sin((1-v)*Math.PI*.64);
+      const spread=.13+.41*Math.sin((1-v)*Math.PI*.57);
       points.setXYZ(i,x+.018+spread*u,2.99-(1-v)*1.32-.25*u,
-        z+.073*Math.sin(u*14+(1-v)*2.3)*Math.sin(u*Math.PI)+.13*u);
+        z+(.043+.046*(1-v))*Math.sin(u*20+(1-v)*1.7)*Math.sin(u*Math.PI)+.13*u);
     }
     cloth.computeVertexNormals();
     const flag=new THREE.Mesh(cloth,new THREE.MeshStandardMaterial({

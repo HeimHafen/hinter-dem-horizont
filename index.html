@@ -21,18 +21,18 @@ try { await start(); } catch(error) {
 }
 async function start(){
   const scene=new THREE.Scene();
-  scene.background=new THREE.Color(0xa4c3e2);
+  scene.background=new THREE.Color(0xb5ccdf);
   const camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.035,160);
   const renderer=new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.setSize(innerWidth,innerHeight);
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   document.body.append(renderer.domElement);
-  scene.add(new THREE.HemisphereLight(0xe0ecff,0x655b48,.88));
-  const sun=new THREE.DirectionalLight(0xffe4c5,2.65);
+  scene.add(new THREE.HemisphereLight(0xe0ecff,0x82745d,1.12));
+  const sun=new THREE.DirectionalLight(0xffebd8,2.2);
   sun.position.set(-14,12,6);
   scene.add(sun);
-  const {scene:model}=await new GLTFLoader().loadAsync('./Weisses-Haus.glb');
+  const {scene:model}=await new GLTFLoader().loadAsync('./Weisses-Haus.glb?v=2');
   scene.add(model);
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -46,6 +46,77 @@ async function start(){
     o.receiveShadow=true;
     o.castShadow=o.material.name!=='Rasen'&&o.material.name!=='Kies';
   });
+  // Exterior detail uses the same coordinates as the existing entrance.
+  const exterior = new THREE.Group();
+  scene.add(exterior);
+  const stone = new THREE.MeshStandardMaterial({color:0xe7dfcf,roughness:.77});
+  const roof = new THREE.MeshStandardMaterial({color:0x535e59,roughness:.81});
+  function surface(x,y,z,w,h,d,material){
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+    mesh.position.set(x,y,z);
+    mesh.castShadow=mesh.receiveShadow=true;
+    exterior.add(mesh);
+  }
+  surface(0,14.42,-1,45,.6,22,roof);
+  surface(0,15.1,-2,35,.85,16,stone);
+  surface(0,15.59,-2,35.6,.22,16.6,roof);
+  for(const x of [-17,-10,10,17])for(const z of [-8,5]){
+    surface(x,16,z,1.19,2.1,1.05,stone);
+    surface(x,17.08,z,1.45,.24,1.32,stone);
+  }
+  const glass = new THREE.MeshStandardMaterial({color:0x243b4b,roughness:.21,metalness:.12});
+  for(const side of [-1,1]){
+    surface(side*24.1,14.95,0,.3,.27,24.5,stone);
+    for(let i=0;i<33;i++)surface(side*24.1,14.53,-11.9+i*.744,.27,.8,.19,stone);
+    for(let z=-9;z<=10;z+=4)for(const [y,h] of [[2.75,2.85],[7.8,2.75],[11.92,1.85]]){
+      surface(side*23.59,y,z,.18,h+.22,2.04,stone);
+      surface(side*23.7,y,z,.12,h,1.7,glass);
+      for(const offset of [-.56,0,.56])surface(side*23.78,y,z+offset,.05,h,.047,stone);
+      for(const offset of [-.26,0,.26])surface(side*23.78,y+h*offset,z,.05,.047,1.7,stone);
+      surface(side*23.8,y-h/2-.12,z,.41,.17,2.2,stone);
+    }
+    for(let i=0;i<11;i++)surface(side*7.7,1.2,17.4-i*.45,.13,.67,.155,stone);
+    surface(side*7.7,1.57,15.15,.31,.16,4.85,stone);
+  }
+  for(let x=-20;x<=20;x+=5){
+    for(const [y,h] of [[2.75,2.85],[7.8,2.75],[11.92,1.85]]){
+      if(x===0&&y<3)continue;
+      for(const side of [-1,1])surface(x+side*.97,y,12.24,.13,h+.25,.23,stone);
+      surface(x,y+h*.5+.13,12.31,2.26,.14,.4,stone);
+    }
+  }
+  function grain(material,scale,strength){
+    material.customProgramCacheKey=()=>`grain-${scale}-${strength}`;
+    material.onBeforeCompile=shader=>{
+      shader.vertexShader='varying vec3 grainPoint;\n'+shader.vertexShader.replace(
+        '#include <project_vertex>',
+        'grainPoint=(modelMatrix*vec4(transformed,1.0)).xyz;\n#include <project_vertex>');
+      shader.fragmentShader='varying vec3 grainPoint;\n'+shader.fragmentShader.replace(
+        '#include <color_fragment>',`#include <color_fragment>
+        vec3 p=grainPoint*${scale.toFixed(2)};
+        float broad=sin(p.x*.43+p.z*.28)*sin(p.z*.57-p.y*.8);
+        float fine=sin(p.x*3.1+p.z*4.3)*sin(p.y*5.7+p.z*2.9);
+        float fade=1.0-smoothstep(.12,1.1,length(fwidth(p)));
+        diffuseColor.rgb *= 1.0+${strength.toFixed(3)}*(broad*.68+fine*.32*fade);
+      `);
+    };
+  }
+  grain(stone,15,.09);
+  const dressed=new Set();
+  model.traverse(mesh=>{
+    if(!mesh.isMesh||dressed.has(mesh.material))return;
+    const material=mesh.material;
+    dressed.add(material);
+    if(/Kalkstein|Gesimse/.test(material.name))grain(material,15,.10);
+    if(material.name==='Rasen')grain(material,2.6,.24);
+    if(material.name==='Kies')grain(material,24,.16);
+    if(material.name==='Laub'){
+      grain(material,6,.20);
+      material.flatShading=false;
+      mesh.geometry.computeVertexNormals();
+    }
+    if(material.name==='Fenster')material.roughness=.23;
+  });
   const door=new THREE.Group();
   door.position.set(-1.5,.87,12.13);
   scene.add(door);
@@ -56,7 +127,7 @@ async function start(){
   detail(door,1.5,1.53,0,3,3.06,.13,0x4f301b);
   for(const x of [.78,2.22])for(const y of [.62,1.64,2.54])
     detail(door,x,y,.08,1.15,.67,.06,0x654326);
-  detail(door,2.77,1.35,.12,.12,.13,.11,0xb48a44);
+  detail(door,2.77,1.35,.12,.12,.13,.11,0x967044);
   const lamp=new THREE.PointLight(0xffdfae,24,8);
   lamp.position.set(0,3.8,9.2);scene.add(lamp);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);
@@ -70,7 +141,7 @@ async function start(){
     button.onpointerdown=event=>{button.setPointerCapture(event.pointerId);touchKeys.set(event.pointerId,button.dataset.key);};
     button.onpointerup=button.onpointercancel=button.onlostpointercapture=event=>touchKeys.delete(event.pointerId);
   }
-  let x=0,z=49,yaw=0,pitch=.08,look=null,opened=false;
+  let x=0,z=innerWidth<innerHeight?52:42,yaw=0,pitch=.08,look=null,opened=false;
   let previousX=0,previousY=0;
   const canvas=renderer.domElement;
   canvas.onpointerdown=e=>{
@@ -89,6 +160,7 @@ async function start(){
   function valid(px,pz){
     if(Math.abs(px)>31||pz>53||pz<8.45)return false;
     if(pz<12.43&&(Math.abs(px)>1.23||door.rotation.y<1.45))return false;
+    if(pz>12.75&&pz<17.75&&Math.abs(Math.abs(px)-7.7)<.42)return false;
     return bounds.every(([cx,cz])=>Math.hypot(px-cx,pz-cz)>.98);
   }
   function ground(px,pz){

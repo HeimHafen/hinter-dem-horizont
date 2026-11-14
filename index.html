@@ -677,7 +677,10 @@ async function start(){
       const grain=y+3*Math.sin(x*.014+y*.11)+1.1*Math.sin(x*.037+y*.032);
       const shade=7*Math.sin(grain*1.8)+4*Math.sin(grain*4.7)+7*Math.sin(grain*.23);
       const i=4*(y*512+x);
-      pixels.data.set([100+shade,57+shade*.65,34+shade*.45,255],i);
+      pixels.data[i]=100+shade;
+      pixels.data[i+1]=57+shade*.65;
+      pixels.data[i+2]=34+shade*.45;
+      pixels.data[i+3]=255;
     }
     ink.putImageData(pixels,0,0);
     const grain=new THREE.CanvasTexture(canvas);
@@ -700,13 +703,40 @@ async function start(){
       const path=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
       part(new THREE.TubeGeometry(path,Math.max(12,points.length*3),radius,6),material,0,0,0);
     }
-    block(0,.776,0,1.829,.098,1.219);
-    block(0,.728,0,1.795,.021,1.188,carved);
-    block(0,.698,0,1.74,.044,1.147,recess);
-    block(0,.827,0,1.56,.004,.952,hide);
+    function roundedOutline(width,depth,radius){
+      const x=width/2,z=depth/2,r=radius;
+      const shape=new THREE.Shape();
+      shape.moveTo(-x+r,-z);
+      shape.lineTo(x-r,-z);shape.quadraticCurveTo(x,-z,x,-z+r);
+      shape.lineTo(x,z-r);shape.quadraticCurveTo(x,z,x-r,z);
+      shape.lineTo(-x+r,z);shape.quadraticCurveTo(-x,z,-x,z-r);
+      shape.lineTo(-x,-z+r);shape.quadraticCurveTo(-x,-z,-x+r,-z);
+      return shape;
+    }
+    function topLayer(w,d,r,y,height,material){
+      const geometry=new THREE.ExtrudeGeometry(roundedOutline(w,d,r),{
+        depth:height,bevelEnabled:false,curveSegments:8
+      });
+      const uv=geometry.attributes.uv;
+      const positions=geometry.attributes.position;
+      for(let i=0;i<uv.count;i++)uv.setXY(i,positions.getX(i)/w+.5,positions.getY(i)/d+.5);
+      part(geometry,material,0,y,0).rotation.x=-Math.PI/2;
+    }
+    topLayer(1.829,1.219,.032,.748,.072,oak);
+    topLayer(1.805,1.194,.028,.732,.016,carved);
+    topLayer(1.775,1.164,.025,.714,.018,recess);
+    topLayer(1.749,1.141,.023,.7,.014,oak);
+    topLayer(1.56,.952,.035,.82,.004,hide);
+    for(const [w,d] of [[1.532,.924],[1.516,.908]]){
+      const border=roundedOutline(w,d,.03).getPoints(8);
+      const path=new THREE.CurvePath();
+      for(let i=1;i<border.length;i++){
+        const [a,b]=[border[i-1],border[i]];
+        path.add(new THREE.LineCurve3(new THREE.Vector3(a.x,.825,-a.y),new THREE.Vector3(b.x,.825,-b.y)));
+      }
+      part(new THREE.TubeGeometry(path,192,.0011,4,false),hardware,0,0,0);
+    }
     for(const side of [-1,1]){
-      block(0,.83,side*.475,1.56,.003,.003,hardware);
-      block(side*.778,.83,0,.003,.003,.95,hardware);
       const p=side*.611;
       block(p,.34,0,.49,.65,1.10);
       block(p,.051,0,.551,.102,1.146,recess);
@@ -760,7 +790,25 @@ async function start(){
     part(new THREE.ExtrudeGeometry(shield,{depth:.008,bevelThickness:.003,bevelSize:.003,bevelSegments:2}),carved,0,.393,.604);
     for(let stripe=-2;stripe<=2;stripe++)block(stripe*.013,.374,.617,.004,.041-Math.abs(stripe)*.007,.004,recess);
     part(new THREE.SphereGeometry(.021,16,12),carved,.01,.447,.61).scale.set(1,.9,.48);
-    block(0,.657,-.565,.185,.036,.008,hardware);
+    const plaque=document.createElement('canvas');
+    plaque.width=512;plaque.height=112;
+    const plate=plaque.getContext('2d');
+    const patina=plate.createLinearGradient(0,0,512,112);
+    patina.addColorStop(0,'#8a693d');patina.addColorStop(.43,'#c4a678');patina.addColorStop(1,'#846437');
+    plate.fillStyle=patina;plate.fillRect(0,0,512,112);
+    plate.strokeStyle='#55402a';plate.lineWidth=2;plate.strokeRect(7,7,498,98);
+    plate.fillStyle='#352819';plate.textAlign='center';
+    plate.font='bold 25px Georgia';plate.fillText('H.M.S. RESOLUTE',256,44);
+    plate.font='17px Georgia';plate.fillText('Presented by Queen Victoria · 1880',256,79);
+    const inscription=new THREE.CanvasTexture(plaque);
+    inscription.colorSpace=THREE.SRGBColorSpace;
+    block(0,.657,-.565,.185,.041,.008,hardware);
+    part(new THREE.PlaneGeometry(.18,.039),new THREE.MeshStandardMaterial({
+      map:inscription,metalness:.29,roughness:.48
+    }),0,.657,-.570).rotation.y=Math.PI;
+    for(const x of [-.083,.083]){
+      part(new THREE.SphereGeometry(.0028,8,6),hardware,x,.657,-.571);
+    }
     obstacles.push({x,z,w:1.829,d:1.219});
   }
   resoluteDesk(14.4,-4.15);

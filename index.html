@@ -1135,6 +1135,45 @@ async function start(){
     folio.rotation.y=.09;
     const sheets=block(-.47,.843,-.19,.278,.009,.215,paper);
     sheets.rotation.y=.09;
+    block(.54,.835,-.34,.25,.022,.14,oak);
+    block(.54,.849,-.34,.226,.008,.116,hide);
+    for(const x of [.48,.60]){
+      part(new THREE.CylinderGeometry(.013,.018,.017,16),hardware,x,.861,-.34);
+      part(new THREE.CylinderGeometry(.005,.005,.105,12),hide,x,.913,-.34).rotation.z=.24;
+    }
+    for(let page=0;page<3;page++){
+      const sheet=block(-.47+page*.002,.848+page*.001,-.19,.275,.001,.212,paper);
+      sheet.rotation.y=.09+page*.012;
+    }
+
+    const chairZ=-1.04;
+    const chairLeather=hide.clone();
+    chairLeather.color.setHex(0x24211e);
+    chairLeather.roughness=.52;
+    block(0,.445,chairZ,.60,.085,.52,oak);
+    const cushion=part(new THREE.SphereGeometry(1,32,20),chairLeather,0,.506,chairZ);
+    cushion.scale.set(.293,.067,.246);
+    const back=part(new THREE.SphereGeometry(1,40,28),chairLeather,0,.854,chairZ-.235);
+    back.scale.set(.315,.405,.085);
+    for(let row=0;row<5;row++){
+      for(let column=-2;column<=2;column++){
+        const buttonX=column*.092+(row%2)*.037;
+        const dy=(row-2)*.123;
+        const front=.085*Math.sqrt(1-(buttonX/.315)**2-(dy/.405)**2);
+        const button=part(new THREE.SphereGeometry(.012,10,8),chairLeather,
+          buttonX,.854+dy,chairZ-.235+front);
+        button.scale.z=.46;
+      }
+    }
+    for(const side of [-1,1]){
+      for(const end of [-1,1]){
+        part(new THREE.CylinderGeometry(.021,.027,.40,12),oak,
+          side*.231,.20,chairZ+end*.181);
+      }
+      bead([[side*.29,.52,chairZ+.17],[side*.30,.666,chairZ+.14],
+        [side*.30,.679,chairZ-.05],[side*.275,.658,chairZ-.22]],.024,oak);
+    }
+    obstacles.push({x,z:z+chairZ,w:.64,d:.61});
     const pen=part(new THREE.CylinderGeometry(.0045,.0045,.126,12),hide,.31,.833,-.075);
     pen.rotation.z=Math.PI/2;
     const nib=part(new THREE.ConeGeometry(.0043,.019,12),hardware,.381,.833,-.075);

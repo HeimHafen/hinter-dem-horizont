@@ -5,7 +5,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#202923;color:#fff7e4;font:16px system-ui}
 canvas{display:block;touch-action:none}header{position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;pointer-events:none;background:#17201ee8;padding:12px 16px;border-radius:12px}h1{font:24px Georgia;margin:0 0 5px}
-#controls{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:16px;display:grid;grid-template-columns:repeat(3,54px);gap:5px}button{height:54px;background:#18211eea;color:inherit;border:1px solid #b4ac95;border-radius:12px;font:inherit;touch-action:none}#gate{position:fixed;right:16px;bottom:max(25px,env(safe-area-inset-bottom));padding:0 14px}
+#controls{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:16px;display:grid;grid-template-columns:repeat(3,54px);gap:5px}button{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;height:54px;background:#18211eea;color:inherit;border:1px solid #b4ac95;border-radius:12px;font:inherit;touch-action:none}#gate{position:fixed;right:16px;bottom:max(25px,env(safe-area-inset-bottom));padding:0 14px}
 </style>
 <header><h1>Hinter dem Horizont</h1><div id="place">Weißes Haus wird geladen …</div></header>
 <div id="controls" hidden style="display:none"><span></span><button data-key="w" aria-label="Vorwärts">↑</button><span></span><button data-key="a" aria-label="Links">←</button><button data-key="s" aria-label="Zurück">↓</button><button data-key="d" aria-label="Rechts">→</button></div>
@@ -276,6 +276,9 @@ async function start(){
     {name:'Green Room',x:7.2,color:0x567062},
     {name:'East Room',x:14.4,color:0xcbb693}
   ];
+  const gold=new THREE.MeshStandardMaterial({color:0xb28b4d,roughness:.47,metalness:.33});
+  const hearth=new THREE.MeshStandardMaterial({color:0x251d19,roughness:.88});
+  const trim=new THREE.MeshStandardMaterial({color:0xe9dcc1,roughness:.69});
   for(const [index,room] of rooms.entries()){
     const m=new THREE.MeshStandardMaterial({color:room.color,roughness:.87});
     openingWall(room.x,0,7.2,1.74,m);
@@ -292,15 +295,48 @@ async function start(){
       surface(x,3.13,-7.66,.13,.32,.15,brass);
       surface(x,3.28,-7.60,.18,.21,.18,glow);
     }
-    surface(room.x,4.31,-4,.1,.73,.1,brass);
-    surface(room.x,3.98,-4,.64,.11,.64,glow);
-    const chandelier=new THREE.PointLight(0xffe7c6,34,9);
+    // Decorative details stay against the wall to keep the visitor route clear.
+    for(const y of [1.06,1.76,4.22,4.49]){
+      surface(room.x,y,-7.70,6.93,.08,.13,trim);
+    }
+    for(const side of [-1,1]){
+      const sideX=room.x+side*3.47;
+      for(const y of [1.05,1.76,4.38])surface(sideX,y,-4,.09,.08,7.55,trim);
+      for(const z of [-6.3,-4,-1.7]){
+        surface(sideX,2.96,z,.06,1.47,1.54,trim);
+        surface(sideX-side*.055,2.96,z,.06,1.33,1.4,m);
+      }
+      surface(room.x+side*.76,1.62,-7.44,.21,1.4,.35,marble);
+    }
+    surface(room.x,1.48,-7.69,1.32,1.05,.11,hearth);
+    surface(room.x,2.33,-7.44,1.97,.16,.43,marble);
+    surface(room.x,.93,-7.43,2.02,.08,.65,marble);
+    surface(room.x,3.15,-7.65,1.06,1.22,.10,gold);
+    surface(room.x,3.15,-7.58,.88,1.04,.06,walnut);
+    surface(room.x,4.25,-4,.07,.84,.07,brass);
+    for(let candle=0;candle<8;candle++){
+      const angle=candle*Math.PI/4;
+      const dx=Math.cos(angle), dz=Math.sin(angle);
+      const arm=new THREE.Mesh(new THREE.BoxGeometry(.52,.035,.052),brass);
+      arm.position.set(room.x+dx*.25,3.91,-4+dz*.25);
+      arm.rotation.y=-angle;
+      exterior.add(arm);
+      surface(room.x+dx*.51,4.02,-4+dz*.51,.065,.18,.065,glow);
+    }
+    if(index===0){
+      surface(room.x,1.66,-4.65,2.35,.095,1.30,walnut);
+      for(const dx of [-1,1])for(const dz of [-.49,.49]){
+        surface(room.x+dx,1.25,-4.65+dz,.095,.71,.095,walnut);
+      }
+      obstacles.push({x:room.x,z:-4.65,w:2.35,d:1.30});
+    }
+    const chandelier=new THREE.PointLight(0xffe7c6,21,8);
     chandelier.position.set(room.x,3.77,-4);
     scene.add(chandelier);
   }
   for(const x of [-13,-6.5,0,6.5,13]){
     surface(x,4.45,4.1,.45,.16,.45,glow);
-    const hallLight=new THREE.PointLight(0xffe9cf,42,11);
+    const hallLight=new THREE.PointLight(0xffe9cf,23,9);
     hallLight.position.set(x,4.28,4.1);
     scene.add(hallLight);
   }

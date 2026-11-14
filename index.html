@@ -464,7 +464,7 @@ async function start(){
     ctx.fillStyle='#c8b493';
     ctx.fillRect(0,0,512,512);
     for(let i=0;i<512;i++){
-      ctx.fillStyle=i%4<2?'#ffffff18':'#49331b19';
+      ctx.fillStyle=i%4<2?'#ffffff0b':'#49331b0c';
       ctx.fillRect(i,0,1,512);
       ctx.fillRect(0,i,512,1);
     }
@@ -520,7 +520,7 @@ async function start(){
       const silk=document.createElement('canvas');
       silk.width=silk.height=256;
       const brush=silk.getContext('2d');
-      brush.fillStyle='#a9bfd4';
+      brush.fillStyle='#e3d8c5';
       brush.fillRect(0,0,256,256);
       for(const [x,y] of [[64,64],[192,192]]){
         brush.save();
@@ -531,9 +531,9 @@ async function start(){
           brush.moveTo(0,3);
           brush.bezierCurveTo(-21,17,-17,43,0,52);
           brush.bezierCurveTo(17,43,21,17,0,3);
-          brush.fillStyle='#bccbdd';
+          brush.fillStyle='#e8ddca';
           brush.fill();
-          brush.strokeStyle='#92abc5';
+          brush.strokeStyle='#d9cbb6';
           brush.stroke();
         }
         brush.restore();
@@ -542,7 +542,7 @@ async function start(){
       m.map.colorSpace=THREE.SRGBColorSpace;
       m.map.wrapS=m.map.wrapT=THREE.RepeatWrapping;
       m.map.repeat.set(21,4);
-      m.color.setHex(0xd7be96);
+      m.color.setHex(0xe9d8bc);
       m.roughness=.76;
     }
     openingWall(room.x,0,7.2,1.74,m);
@@ -758,6 +758,9 @@ async function start(){
           exterior.add(binding);
         }
         oval(tableX,2.195,tableZ,.018,.018,.026,brass);
+        const lampLight=new THREE.PointLight(0xffd9a1,2.2,2.4,2);
+        lampLight.position.set(tableX,1.92,tableZ);
+        scene.add(lampLight);
         obstacles.push({x:tableX,z:tableZ,w:.74,d:.74});
       }
       else{
@@ -941,7 +944,7 @@ async function start(){
         exterior.add(new THREE.Mesh(new THREE.TubeGeometry(cord,16,.016,8,false),gold));
         oval(side*1.43,2.40,-6.95,.035,.035,.22,gold);
       }
-      const windowLight=new THREE.PointLight(0xd1e1ff,7,6);
+      const windowLight=new THREE.PointLight(0xe4edff,8,7);
       const bounce=new THREE.PointLight(0xffdfb2,1.15,4);
       bounce.position.set(0,1.28,-5.85);
       scene.add(bounce);
@@ -1043,7 +1046,7 @@ async function start(){
       }
       obstacles.push({x:room.x,z:-4.65,w:2.35,d:1.30});
     }
-    const chandelier=new THREE.PointLight(0xffe7c6,index===2?13:21,8);
+    const chandelier=new THREE.PointLight(0xffe7c6,index===2?8:21,8);
     chandelier.position.set(room.x,3.77,-4);
     scene.add(chandelier);
   }
@@ -1368,37 +1371,42 @@ async function start(){
         oval(side*.255,.907,z+end*.416,.032,.033,.031,brass);
       }
     }
-    const porcelainVase=new THREE.MeshPhysicalMaterial({
-      color:0x26445a,roughness:.32,clearcoat:.58
-    });
-    const vase=new THREE.Mesh(new THREE.LatheGeometry([
-      [.057,0],[.075,.024],[.093,.079],[.086,.114],[.067,.137],[.071,.146],[.056,.146],[.055,.116]
-    ].map(([r,y])=>new THREE.Vector2(r,y)),36),porcelainVase);
-    vase.position.set(0,1.355,z);
-    exterior.add(vase);
-    const leafGeometry=new THREE.SphereGeometry(1,9,6);
-    const leafMaterial=new THREE.MeshStandardMaterial({color:0x435938,roughness:.78});
-    const petals=[0xeee2bb,0xc8a64d,0x7586ab].map(color=>new THREE.MeshStandardMaterial({color,roughness:.84}));
-    for(let i=0;i<15;i++){
-      const angle=i*2.39996;
-      const spread=.04+(i%5)*.024;
-      const tip=new THREE.Vector3(Math.cos(angle)*spread,1.54+(i%4)*.028,z+Math.sin(angle)*spread);
-      const stem=new THREE.LineCurve3(new THREE.Vector3(tip.x*.25,1.45,z+(tip.z-z)*.25),tip);
-      exterior.add(new THREE.Mesh(new THREE.TubeGeometry(stem,1,.003,5,false),leafMaterial));
-      for(let j=0;j<5;j++){
-        const a=j*Math.PI*2/5+angle;
-        const petal=new THREE.Mesh(leafGeometry,petals[i%3]);
-        petal.scale.set(.018,.009,.011);
-        petal.rotation.y=-a;
-        petal.position.set(tip.x+.014*Math.cos(a),tip.y,tip.z+.014*Math.sin(a));
-        exterior.add(petal);
-      }
-      const leaf=new THREE.Mesh(leafGeometry,leafMaterial);
-      leaf.scale.set(.048,.009,.017);
-      leaf.rotation.y=-angle;
-      leaf.position.set(tip.x*.66,tip.y-.055,z+(tip.z-z)*.66);
-      exterior.add(leaf);
+    const ivory=new THREE.MeshStandardMaterial({color:0xe5c794,roughness:.62});
+    const dark=new THREE.MeshStandardMaterial({color:0x39231a,roughness:.53});
+    const boardTop=1.355;
+    surface(0,boardTop+.008,z-.24,.40,.016,.40,walnut);
+    const square=.044;
+    for(let row=0;row<8;row++)for(let col=0;col<8;col++){
+      const x=(col-3.5)*square, tileZ=z-.24+(row-3.5)*square;
+      surface(x,boardTop+.018,tileZ,square,.004,square,(row+col)%2?dark:ivory);
+      if(row>1&&row<6)continue;
+      const pawn=row===1||row===6;
+      const finish=row<2?dark:ivory;
+      const height=pawn?.031:[.042,.047,.051,.062,.066,.051,.047,.042][col];
+      const piece=new THREE.Mesh(new THREE.LatheGeometry(
+        [[.011,0],[.012,.005],[.007,.009],[.005,height*.73],[.008,height*.84],
+          [.007,height*.96],[0,height]].map(([r,y])=>new THREE.Vector2(r,y)),12),finish);
+      piece.position.set(x,boardTop+.020,tileZ);
+      exterior.add(piece);
     }
+    surface(0,boardTop+.009,z+.221,.43,.018,.38,walnut);
+    for(const x of [-.209,0,.209])surface(x,boardTop+.026,z+.221,.014,.018,.38,dark);
+    for(const end of [-1,1]){
+      surface(0,boardTop+.026,z+.221+end*.18,.43,.018,.016,dark);
+      for(let i=0;i<12;i++){
+        const x=(i-5.5)*.033;
+        const startZ=z+.221+end*.17;
+        const shape=new THREE.Shape();
+        shape.moveTo(-.015,0);shape.lineTo(.015,0);shape.lineTo(0,end*.127);shape.closePath();
+        const point=new THREE.Mesh(new THREE.ShapeGeometry(shape),i%2?ivory:dark);
+        point.rotation.x=-Math.PI/2;
+        point.position.set(x,boardTop+.019,startZ);
+        exterior.add(point);
+      }
+    }
+    surface(0,1.028,z,.48,.036,.79,walnut);
+    surface(-.035,1.074,z+.037,.29,.048,.21,dark);
+    surface(-.016,1.116,z+.023,.25,.036,.18,ivory);
     obstacles.push({x:0,z,w:.64,d:1.0});
   }
   {
@@ -1450,8 +1458,8 @@ async function start(){
   grain(chairFabric,125,.10);
   for(const side of [-1,1]){
     const chair=new THREE.Group();
-    chair.position.set(side*1.12,.89,-.91);
-    chair.rotation.y=side*.26;
+    chair.position.set(side*1.35,.89,-4.2);
+    chair.rotation.y=Math.PI-side*.38;
     exterior.add(chair);
     function chairPart(geometry,material,x,y,z){
       const mesh=new THREE.Mesh(geometry,material);
@@ -1480,7 +1488,7 @@ async function start(){
         chairPart(new THREE.CylinderGeometry(.026,.018,.25,12),walnut,arm*.231,.125,z);
       }
     }
-    obstacles.push({x:side*1.12,z:-.91,w:.82,d:.78});
+    obstacles.push({x:side*1.35,z:-4.2,w:.84,d:.84});
   }
   resoluteDesk(0,-5.22);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);

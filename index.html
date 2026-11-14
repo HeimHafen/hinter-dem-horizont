@@ -9,11 +9,13 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 </style>
 <header><h1>Hinter dem Horizont</h1><div id="place">Weißes Haus wird geladen …</div></header>
 <div id="controls" hidden style="display:none"><span></span><button data-key="w" aria-label="Vorwärts">↑</button><span></span><button data-key="a" aria-label="Links">←</button><button data-key="s" aria-label="Zurück">↓</button><button data-key="d" aria-label="Rechts">→</button></div>
+<button id="castle-view" style="position:fixed;right:16px;top:16px;padding:0 14px" hidden>Zur Burg schauen</button>
 <button id="gate" hidden>Tür öffnen</button>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {burgTor,burgBlockiert,ladeBurg} from './burg-lichtfels.js';
 const place=document.querySelector('#place'), gate=document.querySelector('#gate');
 try { await start(); } catch(error) {
   console.error(error);
@@ -22,7 +24,7 @@ try { await start(); } catch(error) {
 async function start(){
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0xb5ccdf);
-  const camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.035,160);
+  const camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.035,205);
   const renderer=new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.setSize(innerWidth,innerHeight);
@@ -34,9 +36,12 @@ async function start(){
   scene.add(sun);
   const {scene:model}=await new GLTFLoader().loadAsync('./Weisses-Haus-Innen.glb');
   scene.add(model);
+  await ladeBurg(THREE,new GLTFLoader(),scene);
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  sun.position.set(-24,27,34);
+  sun.target.position.z=36;
+  scene.add(sun.target);
+  sun.position.set(-35,48,72);
   // Camera-centered sky. Only pixels behind the scene need cloud shading.
   const sky = new THREE.Mesh(new THREE.SphereGeometry(125,32,16), new THREE.ShaderMaterial({
     side:THREE.BackSide, depthWrite:false,
@@ -98,7 +103,7 @@ async function start(){
   scene.add(sky);
   sun.castShadow=true;
   sun.shadow.mapSize.set(2048,2048);
-  Object.assign(sun.shadow.camera,{left:-34,right:34,top:30,bottom:-30,near:1,far:95});
+  Object.assign(sun.shadow.camera,{left:-53,right:53,top:62,bottom:-62,near:1,far:175});
   sun.shadow.normalBias=.035;
   model.traverse(o=>{
     if(!o.isMesh)return;
@@ -182,7 +187,7 @@ async function start(){
   for(const side of [-1,1]){
     for(let x=21.5;x<=23.2;x+=.82){
       for(let row=0;row<9;row++)
-        surface(side*x,1.47+row*1.31,12.223,row%2?.54:.69,.22,.077,stone);
+        surface(side*x,1.47+row*1.31,12.27,row%2?.54:.69,.26,.16,stone);
     }
     for(const x of [3.35,4.55]){
       surface(side*x,3.39,11.98,.21,4.70,.23,stone);
@@ -225,56 +230,6 @@ async function start(){
         surface(x,y+h*offset,-12.37,1.62,.046,.04,paintedSash);
       surface(x,y-h/2-.1,-12.38,2.04,.13,.24,stone);
     }
-  // The south portico has a curved colonnade and a continuous balcony.
-  function southArc(radius,y,height,material){
-    const geometry=new THREE.CylinderGeometry(radius,radius,height,64);
-    const mesh=new THREE.Mesh(geometry,material);
-    mesh.position.set(0,y,-10.85);
-    mesh.scale.x=1.46;
-    mesh.castShadow=mesh.receiveShadow=true;
-    exterior.add(mesh);
-  }
-  for(const [radius,y,height] of [[5.68,.28,.31],[5.48,.51,.22],[5.27,.72,.20],
-    [5.05,6.23,.18],[5.25,6.43,.24],[5.35,6.60,.10],
-    [4.98,11.81,.21],[5.21,12.05,.27],[5.32,12.24,.13]])
-    southArc(radius,y,height,stone);
-  for(const angle of [-1.06,-.65,-.22,.22,.65,1.06]){
-    const x=6.82*Math.sin(angle),z=-10.85-4.68*Math.cos(angle);
-    for(const [bottom,top,baseRadius] of [[.83,6.14,.27],[6.66,11.70,.23]]){
-      surface(x,bottom+.075,z,baseRadius*2.75,.15,baseRadius*2.75,stone);
-      const column=new THREE.Mesh(new THREE.CylinderGeometry(
-        baseRadius*.79,baseRadius,top-bottom-.28,28),stone);
-      column.position.set(x,(bottom+top)/2,z);
-      column.castShadow=column.receiveShadow=true;
-      exterior.add(column);
-      surface(x,top-.067,z,baseRadius*2.64,.134,baseRadius*2.64,stone);
-    }
-  }
-  for(const [y,radius] of [[7.30,5.14],[12.96,5.21]]){
-    const points=Array.from({length:33},(_,i)=>{
-      const a=-1.35+i*2.70/32;
-      return new THREE.Vector3(1.46*radius*Math.sin(a),y,-10.85-radius*Math.cos(a));
-    });
-    const rail=new THREE.Mesh(new THREE.TubeGeometry(
-      new THREE.CatmullRomCurve3(points),64,.065,8,false),stone);
-    rail.castShadow=rail.receiveShadow=true;
-    exterior.add(rail);
-    for(const point of points)surface(point.x,y-.30,point.z,.113,.58,.113,stone);
-  }
-  for(const side of [-1,1]){
-    const iron=new THREE.MeshStandardMaterial({color:0x34302a,roughness:.48,metalness:.62});
-    const lanternGlass=new THREE.MeshStandardMaterial({
-      color:0xdcc49b,roughness:.41,emissive:0x715322,emissiveIntensity:.28
-    });
-    const x=side*2.07;
-    surface(x,2.89,12.48,.34,.55,.29,lanternGlass);
-    for(const y of [2.59,3.19])surface(x,y,12.48,.42,.086,.37,iron);
-    for(const dx of [-.18,.18])for(const dz of [-.15,.15])
-      surface(x+dx,2.89,12.48+dz,.027,.60,.027,iron);
-    surface(x,3.29,12.45,.11,.14,.11,iron);
-    surface(x,3.37,12.31,.10,.055,.34,iron);
-  }
-
   function grain(material,scale,strength){
     material.customProgramCacheKey=()=>`grain-${scale}-${strength}`;
     material.onBeforeCompile=shader=>{
@@ -1695,6 +1650,9 @@ async function start(){
   }
   let x=0,z=innerWidth<innerHeight?52:42,yaw=0,pitch=.08,look=null,opened=false;
   let previousX=0,previousY=0;
+  const castleView=document.querySelector('#castle-view');
+  castleView.hidden=false;
+  castleView.onclick=()=>{x=0;z=26;yaw=Math.PI;pitch=.19;};
   const canvas=renderer.domElement;
   canvas.onpointerdown=e=>{
     if(look!==null)return;
@@ -1710,7 +1668,8 @@ async function start(){
   gate.onclick=()=>{opened=true;gate.hidden=true;};
   const pressed=(...names)=>names.some(key=>keys.has(key)||[...touchKeys.values()].includes(key));
   function valid(px,pz){
-    if(Math.abs(px)>31||pz>53||pz< -7.8)return false;
+    if(Math.abs(px)>31||pz>burgTor+33||pz< -7.8)return false;
+    if(burgBlockiert(px,pz))return false;
     if(pz>=7.96&&pz<12.43&&(Math.abs(px)>1.23||door.rotation.y<1.45))return false;
     if(pz<8&&Math.abs(px)>17.8)return false;
     if(ovalBoundary.some(point=>Math.hypot(px-point.x,pz-point.z)<.33))return false;
@@ -1739,7 +1698,7 @@ async function start(){
     eye=THREE.MathUtils.lerp(eye,ground(x,z)+1.65,1-Math.exp(-dt*14));
     camera.position.set(x,eye,z);
     camera.rotation.set(pitch,yaw,0,'YXZ');
-    place.textContent=z<-.35?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Cross Hall':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
+    place.textContent=z>=burgTor+18.4&&z<burgTor+29&&Math.abs(x)<9?'Burg Lichtfels · Große Halle':z>=burgTor+3.5?'Burg Lichtfels · Innenhof':z>=burgTor?'Burg Lichtfels · Torhalle':z>=32?'Weg zur Burg Lichtfels':z<-.35?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Cross Hall':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
     sky.position.copy(camera.position);
     sky.material.uniforms.drift.value+=dt*.022;
     renderer.render(scene,camera);

@@ -512,16 +512,88 @@ async function start(){
       }
       const view=new THREE.CanvasTexture(scenery);
       view.colorSpace=THREE.SRGBColorSpace;
-      const sash=new THREE.MeshBasicMaterial({map:view,color:0xe7edf0});
-      surface(0,2.65,-7.57,1.41,2.43,.04,sash);
-      for(const side of [-1,1]){
-        surface(side*.77,2.65,-7.36,.13,2.63,.44,trim);
-        surface(side*.70,2.65,-7.46,.041,2.43,.21,stone);
+      const paintedWood=new THREE.MeshStandardMaterial({color:0xe9e1d2,roughness:.48});
+      const moulding=new THREE.MeshStandardMaterial({color:0xf3edde,roughness:.53});
+      const rebate=new THREE.MeshStandardMaterial({color:0x999082,roughness:.79});
+      const foliage=document.createElement('canvas');
+      foliage.width=768;
+      foliage.height=512;
+      const leaves=foliage.getContext('2d');
+      let seed=173;
+      function random(){
+        seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+        return seed/4294967296;
       }
-      surface(0,1.39,-7.34,1.73,.115,.49,trim);
-      surface(0,3.92,-7.35,1.67,.115,.42,trim);
-      for(const x of [-.46,0,.46])surface(x,2.65,-7.52,.032,2.43,.055,trim);
-      for(const y of [1.89,2.65,3.41])surface(0,y,-7.52,1.41,.031,.055,trim);
+      for(const center of [15,147,611,749]){
+        const crown=277+random()*42;
+        leaves.fillStyle='#554437';
+        leaves.fillRect(center-3,crown,6,139);
+        for(let i=0;i<580;i++){
+          const angle=random()*Math.PI*2;
+          const radius=Math.sqrt(random());
+          const x=center+Math.cos(angle)*radius*85;
+          const y=crown+Math.sin(angle)*radius*61;
+          leaves.fillStyle=['#364e36','#4b633f','#586f44','#718458','#829262'][Math.floor(random()*5)];
+          leaves.beginPath();
+          leaves.ellipse(x,y,3+random()*9,2+random()*5,angle,0,Math.PI*2);
+          leaves.fill();
+        }
+      }
+      const foreground=new THREE.CanvasTexture(foliage);
+      foreground.colorSpace=THREE.SRGBColorSpace;
+      const garden=new THREE.MeshBasicMaterial({map:view,color:0xe4e9e5});
+      // Sample the landscape on an imaginary plane behind the glass.
+      garden.onBeforeCompile=shader=>{
+        shader.uniforms.gardenForeground={value:foreground};
+        shader.vertexShader='varying vec3 gardenPoint;\n'+shader.vertexShader.replace(
+          '#include <project_vertex>',
+          'gardenPoint=(modelMatrix*vec4(transformed,1.0)).xyz;\n#include <project_vertex>');
+        shader.fragmentShader='varying vec3 gardenPoint;\nuniform sampler2D gardenForeground;\n'+shader.fragmentShader.replace(
+          '#include <map_fragment>',`
+            vec3 sight=normalize(gardenPoint-cameraPosition);
+            vec2 shift=clamp(sight.xy/max(-sight.z,.23),-.9,.9);
+            vec2 landscapeUV=vec2(.5)+.55*(vMapUv-vec2(.5))+.23*shift;
+            vec2 foliageUV=vec2(.5)+.56*(vMapUv-vec2(.5))+.12*shift;
+            vec4 trees=texture2D(gardenForeground,foliageUV);
+            diffuseColor.rgb *= mix(texture2D(map,landscapeUV).rgb,trees.rgb,trees.a);
+          `);
+      };
+      const outlook=new THREE.Mesh(new THREE.PlaneGeometry(1.41,2.43),garden);
+      outlook.position.set(0,2.65,-7.607);
+      exterior.add(outlook);
+      for(const side of [-1,1]){
+        surface(side*.775,2.65,-7.36,.135,2.63,.44,paintedWood);
+        surface(side*.854,2.65,-7.119,.058,2.65,.073,moulding);
+        surface(side*.704,2.65,-7.421,.029,2.46,.30,rebate);
+        surface(side*.684,2.65,-7.53,.039,2.44,.095,paintedWood);
+        surface(0,2.65+side*1.235,-7.385,1.45,.058,.38,paintedWood);
+      }
+      surface(0,1.397,-7.327,1.76,.105,.48,paintedWood);
+      surface(0,1.361,-7.071,1.79,.039,.057,moulding);
+      surface(0,1.307,-7.138,1.56,.061,.057,paintedWood);
+      surface(0,3.965,-7.34,1.73,.13,.43,paintedWood);
+      surface(0,4.011,-7.102,1.77,.043,.067,moulding);
+      const glassPane=new THREE.MeshStandardMaterial({
+        color:0xe1ebf0,envMap:windowEnvironment.texture,envMapIntensity:.27,
+        metalness:.20,roughness:.23,transparent:true,opacity:.10,depthWrite:false
+      });
+      const paneGeometry=new THREE.PlaneGeometry(.421,.557);
+      for(let row=0;row<4;row++)for(let col=0;col<3;col++){
+        const pane=new THREE.Mesh(paneGeometry,glassPane);
+        pane.position.set((col-1)*.45,2.65+(row-1.5)*.606,-7.586);
+        exterior.add(pane);
+      }
+      for(const x of [-.225,.225]){
+        surface(x,2.65,-7.544,.044,2.43,.087,paintedWood);
+        surface(x,2.65,-7.494,.018,2.43,.019,moulding);
+      }
+      for(const y of [2.044,2.65,3.256]){
+        const rail=y===2.65?.071:.044;
+        surface(0,y,-7.543,1.41,rail,.087,paintedWood);
+        surface(0,y,-7.494,1.41,rail*.37,.019,moulding);
+      }
+      surface(0,2.696,-7.467,.116,.035,.046,brass);
+      surface(.016,2.716,-7.436,.067,.025,.045,gold);
       drape.side=THREE.DoubleSide;
       for(const side of [-1,1]){
         const cloth=new THREE.PlaneGeometry(1,1,48,26);

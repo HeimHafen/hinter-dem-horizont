@@ -664,6 +664,106 @@ async function start(){
     surface(0,4.53,z,35.75,.13,.17,trim);
     surface(0,4.42,z,35.75,.054,.12,trim);
   }
+  function resoluteDesk(x,z){
+    const desk=new THREE.Group();
+    desk.name='Resolute Desk';
+    desk.position.set(x,.89,z);
+    exterior.add(desk);
+    const canvas=document.createElement('canvas');
+    canvas.width=512;canvas.height=256;
+    const ink=canvas.getContext('2d');
+    const pixels=ink.createImageData(512,256);
+    for(let y=0;y<256;y++)for(let x=0;x<512;x++){
+      const grain=y+3*Math.sin(x*.014+y*.11)+1.1*Math.sin(x*.037+y*.032);
+      const shade=7*Math.sin(grain*1.8)+4*Math.sin(grain*4.7)+7*Math.sin(grain*.23);
+      const i=4*(y*512+x);
+      pixels.data.set([100+shade,57+shade*.65,34+shade*.45,255],i);
+    }
+    ink.putImageData(pixels,0,0);
+    const grain=new THREE.CanvasTexture(canvas);
+    grain.colorSpace=THREE.SRGBColorSpace;
+    grain.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    const oak=new THREE.MeshStandardMaterial({map:grain,roughness:.37});
+    const carved=new THREE.MeshStandardMaterial({color:0x805132,roughness:.43});
+    const recess=new THREE.MeshStandardMaterial({color:0x492717,roughness:.55});
+    const hide=new THREE.MeshStandardMaterial({color:0x251e19,roughness:.86});
+    const hardware=new THREE.MeshStandardMaterial({color:0x947247,metalness:.66,roughness:.35});
+    function part(geometry,material,x,y,z){
+      const mesh=new THREE.Mesh(geometry,material);
+      mesh.position.set(x,y,z);
+      mesh.castShadow=true;mesh.receiveShadow=true;
+      desk.add(mesh);
+      return mesh;
+    }
+    const block=(x,y,z,w,h,d,material=oak)=>part(new THREE.BoxGeometry(w,h,d),material,x,y,z);
+    function bead(points,radius,material=carved){
+      const path=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
+      part(new THREE.TubeGeometry(path,Math.max(12,points.length*3),radius,6),material,0,0,0);
+    }
+    block(0,.776,0,1.829,.098,1.219);
+    block(0,.728,0,1.795,.021,1.188,carved);
+    block(0,.698,0,1.74,.044,1.147,recess);
+    block(0,.827,0,1.56,.004,.952,hide);
+    for(const side of [-1,1]){
+      block(0,.83,side*.475,1.56,.003,.003,hardware);
+      block(side*.778,.83,0,.003,.003,.95,hardware);
+      const p=side*.611;
+      block(p,.34,0,.49,.65,1.10);
+      block(p,.051,0,.551,.102,1.146,recess);
+      block(p,.115,0,.533,.037,1.129,carved);
+      for(const end of [-1,1]){
+        const face=end*.561;
+        for(let row=0;row<3;row++){
+          const y=.221+row*.143;
+          block(p,y,face,.359,.128,.025,recess);
+          block(p,y,face+end*.014,.322,.099,.021);
+          if(end<0){
+            bead([[p-.049,y+.013,-.589],[p-.036,y-.013,-.601],
+              [p,y-.025,-.606],[p+.036,y-.013,-.601],[p+.049,y+.013,-.589]],.006,hardware);
+          }else{
+            for(const sign of [-1,1]){
+              bead(Array.from({length:15},(_,i)=>{
+                const a=i*.43,r=.046*(1-i/17);
+                return [p+sign*(.047+r*Math.cos(a)),y+r*.76*Math.sin(a),.59];
+              }),.005);
+            }
+          }
+        }
+        for(const trimX of [p-.213,p+.213]){
+          block(trimX,.363,face,.042,.502,.035,carved);
+          for(let flute=-2;flute<=2;flute++){
+            block(trimX+flute*.007,.36,face+end*.021,.003,.406,.008,recess);
+          }
+          block(trimX,.622,face,.075,.048,.048,carved);
+        }
+      }
+      const flank=side*.861;
+      for(const y of [.177,.624])block(flank,y,0,.022,.029,.977,carved);
+      for(const trimZ of [-.48,0,.48])block(flank,.4,trimZ,.022,.46,.028,carved);
+    }
+    block(0,.659,0,1.728,.076,1.107);
+    block(0,.388,.537,.709,.461,.037,recess);
+    block(0,.388,.56,.644,.405,.023);
+    for(const side of [-1,1]){
+      block(side*.308,.388,.58,.024,.4,.016,carved);
+      block(0,.388+side*.188,.58,.625,.024,.016,carved);
+      for(let feather=0;feather<8;feather++){
+        const angle=(feather+1)*.078;
+        bead([[side*.028,.39,.604],[side*(.075+angle*.14),.437+angle*.02,.615],
+          [side*(.121+angle*.13),.49-angle*.18,.606]],.007);
+      }
+    }
+    const shield=new THREE.Shape();
+    shield.moveTo(-.043,.022);shield.lineTo(.043,.022);shield.lineTo(.036,-.036);
+    shield.quadraticCurveTo(.028,-.059,0,-.074);
+    shield.quadraticCurveTo(-.028,-.059,-.036,-.036);shield.closePath();
+    part(new THREE.ExtrudeGeometry(shield,{depth:.008,bevelThickness:.003,bevelSize:.003,bevelSegments:2}),carved,0,.393,.604);
+    for(let stripe=-2;stripe<=2;stripe++)block(stripe*.013,.374,.617,.004,.041-Math.abs(stripe)*.007,.004,recess);
+    part(new THREE.SphereGeometry(.021,16,12),carved,.01,.447,.61).scale.set(1,.9,.48);
+    block(0,.657,-.565,.185,.036,.008,hardware);
+    obstacles.push({x,z,w:1.829,d:1.219});
+  }
+  resoluteDesk(14.4,-4.15);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);
   const keys=new Set(),touchKeys=new Map();
   addEventListener('keydown',event=>{keys.add(event.key.toLowerCase());if(event.key.toLowerCase()==='e'&&!event.repeat&&!gate.hidden)gate.click();});

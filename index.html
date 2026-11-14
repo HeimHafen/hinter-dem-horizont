@@ -794,35 +794,12 @@ async function start(){
       const shadowMaterial=new THREE.MeshBasicMaterial({
         map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1
       });
-      for(const [x,z,w,d] of [[-1.83,-5.55,1.63,1.02],[1.83,-5.55,1.63,1.02],[0,-6.75,1.42,.92]]){
+      for(const [x,z,w,d] of [[-1.83,-5.55,1.63,1.02],[1.83,-5.55,1.63,1.02],[0,-5.22,2.12,1.52]]){
         const shadow=new THREE.Mesh(new THREE.PlaneGeometry(w,d),shadowMaterial);
         shadow.rotation.x=-Math.PI/2;
         shadow.position.set(x,.920,z);
         exterior.add(shadow);
       }
-      // A period-inspired pedestal table with a moulded apron and three swept feet.
-      oval(0,1.668,-6.75,.59,.35,.048,walnut);
-      oval(0,1.636,-6.75,.57,.331,.026,gold);
-      oval(0,1.589,-6.75,.53,.31,.086,walnut);
-      oval(0,1.15,-6.75,.075,.075,.43,walnut);
-      for(const [y,r,h] of [[1.01,.115,.075],[1.22,.093,.045],[1.38,.103,.065],[1.49,.17,.11]]){
-        oval(0,y,-6.75,r,r,h,walnut);
-      }
-      for(let foot=0;foot<3;foot++){
-        const angle=foot*Math.PI*2/3;
-        const dx=Math.cos(angle),dz=Math.sin(angle);
-        const profile=new THREE.CatmullRomCurve3([
-          new THREE.Vector3(dx*.07,1.12,-6.75+dz*.07),
-          new THREE.Vector3(dx*.17,1.04,-6.75+dz*.17),
-          new THREE.Vector3(dx*.34,.965,-6.75+dz*.34)
-        ]);
-        const leg=new THREE.Mesh(new THREE.TubeGeometry(profile,16,.042,12,false),walnut);
-        leg.castShadow=true;
-        exterior.add(leg);
-        oval(dx*.34,.95,-6.75+dz*.34,.048,.048,.066,gold);
-      }
-      obstacles.push({x:0,z:-6.75,w:1.18,d:.72});
-
       // Hang the frames tangentially against the curved wall.
       for(const side of [-1,1]){
         const angle=Math.PI+side*.69;
@@ -1036,7 +1013,7 @@ async function start(){
     }
     obstacles.push({x,z,w:1.829,d:1.219});
   }
-  resoluteDesk(14.4,-4.15);
+  resoluteDesk(0,-5.22);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);
   const keys=new Set(),touchKeys=new Map();
   addEventListener('keydown',event=>{keys.add(event.key.toLowerCase());if(event.key.toLowerCase()==='e'&&!event.repeat&&!gate.hidden)gate.click();});

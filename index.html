@@ -99,15 +99,26 @@ async function start(){
       if(material.name.includes('Schiefer'))weathered(material,'slate');
     }
   });
-  scene.add(model);
+  const castle=new THREE.Group();
+  castle.scale.set(4,2.5,4);
+  scene.add(castle);
+  castle.add(model);
+  renderer.localClippingEnabled=true;
+  // Keep the upper silhouette while opening the space behind the gatehouse.
+  const rear=new THREE.Plane(new THREE.Vector3(0,0,1),-1.9*4);
+  const above=new THREE.Plane(new THREE.Vector3(0,1,0),-5.4*2.5);
+  for(const material of dressed){
+    material.clippingPlanes=[rear,above];
+    material.clipIntersection=true;
+  }
   const stone=weathered(new THREE.MeshStandardMaterial({color:0x948b77,roughness:.95}),'masonry');
   const floor=new THREE.MeshStandardMaterial({color:0x6f6757,roughness:.94});
   const oak=new THREE.MeshStandardMaterial({color:0x3c2719,roughness:.82});
-  function box(x,y,z,w,h,d,material,parent=scene){
+  function box(x,y,z,w,h,d,material,parent=castle){
     const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
     mesh.position.set(x,y,z);parent.add(mesh);return mesh;
   }
-  box(0,-.17,0,120,.24,120,new THREE.MeshStandardMaterial({color:0x505840}));
+  box(0,-.22,0,240,.24,240,new THREE.MeshStandardMaterial({color:0x505840}),scene);
   box(0,2.20,.30,2.6,.16,4.4,floor);
   for(const side of [-1,1]){
     box(side*1.08,3.55,.30,.5,2.55,4.4,stone);
@@ -115,7 +126,25 @@ async function start(){
   }
   box(0,4.94,.30,2.65,.28,4.4,stone);
   box(0,6.10,1.72,2.65,2.32,1.45,stone);
-  box(0,3.6,-1.83,2.65,2.65,.2,stone);
+  // Courtyard and three rooms reached from its rear arcade.
+  box(0,2.02,-6.9,13,.52,10.25,floor);
+  for(const side of [-1,1]){
+    box(side*6.45,3.65,-6.9,.35,3,10.25,stone);
+    box(side*3.85,3.65,-1.91,5.2,3,.35,stone);
+  }
+  const doors=[-4,0,4];
+  for(const center of doors){
+    for(const side of [-1,1])box(center+side*1.31,3.62,-8.1,1.38,2.68,.24,stone);
+    box(center,4.45,-8.1,1.25,1.02,.24,stone);
+    box(center,5.07,-10,4,.27,3.8,stone);
+  }
+  for(const x of [-6,-2,2,6])box(x,3.62,-10,.25,2.68,3.8,stone);
+  box(0,3.65,-11.9,13,3,.28,stone);
+  for(const x of doors){
+    const lamp=new THREE.PointLight(0xffbc79,22,12,2);
+    lamp.position.set(x*4,10,-41);
+    scene.add(lamp);
+  }
   const profile=new THREE.Shape();
   profile.moveTo(0,0);profile.lineTo(1.64,0);profile.lineTo(1.64,1.11);
   profile.quadraticCurveTo(1.64,1.50,.82,2.03);
@@ -132,14 +161,14 @@ async function start(){
     depth:.18,bevelEnabled:true,bevelThickness:.035,bevelSize:.035,bevelSegments:2
   }),stone);
   portal.position.set(0,2.28,2.39);
-  scene.add(portal);
+  castle.add(portal);
   const hinge=new THREE.Group();
-  hinge.position.set(-.82,2.28,2.44);scene.add(hinge);
+  hinge.position.set(-.82,2.28,2.44);castle.add(hinge);
   hinge.add(new THREE.Mesh(new THREE.ExtrudeGeometry(profile,{depth:.10,bevelEnabled:false}),oak));
   for(const y of [.32,.83])box(.82,y,.12,1.49,.065,.04,floor,hinge);
   for(const z of [1.45,-.95]){
     const lamp=new THREE.PointLight(0xffac58,6,5,2);
-    lamp.position.set(.67,3.95,z);scene.add(lamp);
+    lamp.position.set(2.68,9.875,z*4);lamp.intensity=25;lamp.distance=13;scene.add(lamp);
     box(.73,3.85,z,.13,.23,.14,new THREE.MeshBasicMaterial({color:0xffbb65}));
   }
   const keys=new Set(),touchKeys=new Map();
@@ -152,7 +181,7 @@ async function start(){
     button.onpointerdown=event=>{button.setPointerCapture(event.pointerId);touchKeys.set(event.pointerId,button.dataset.key);};
     button.onpointerup=button.onpointercancel=button.onlostpointercapture=event=>touchKeys.delete(event.pointerId);
   }
-  let x=0,z=9,yaw=0,pitch=.07,look=null,opened=false;
+  let x=0,z=12,yaw=0,pitch=.07,look=null,opened=false;
   const canvas=renderer.domElement;
   canvas.onpointerdown=event=>{if(look!==null)return;look=event.pointerId;canvas.setPointerCapture(look);};
   canvas.onpointermove=event=>{
@@ -164,7 +193,13 @@ async function start(){
   gate.onclick=()=>{opened=true;gate.hidden=true;};
   const pressed=(...names)=>names.some(key=>keys.has(key)||[...touchKeys.values()].includes(key));
   function valid(px,pz){
-    if(pz>20||pz< -1.52||Math.abs(px)>10)return false;
+    if(pz>20||pz< -11.68||Math.abs(px)>10)return false;
+    if(pz< -1.77){
+      if(Math.abs(px)>6.18)return false;
+      if(Math.abs(pz+8.1)<.19)return doors.some(center=>Math.abs(px-center)<.54);
+      if(pz< -8.18)return Math.abs(px)<5.82&&Math.abs(Math.abs(px)-2)>.20;
+      return true;
+    }
     if(pz<2.65)return Math.abs(px)<.64&&(opened&&hinge.rotation.y>1.45);
     if(pz<6.97)return Math.abs(px)<.88;
     return true;
@@ -172,22 +207,22 @@ async function start(){
   function ground(pz){
     return pz>6.97?-.04:pz<2.39?2.28:.18+2.22*Math.max(0,Math.min(33,Math.floor((6.9-pz)/(.1324))))/33;
   }
-  let last=performance.now(),eye=ground(z)+1.65;
+  let last=performance.now(),eye=ground(z)*2.5+1.65;
   renderer.setAnimationLoop(now=>{
     const dt=Math.min(.05,(now-last)/1000);last=now;
     const f=Number(pressed('w','arrowup'))-Number(pressed('s','arrowdown'));
     const s=Number(pressed('d','arrowright'))-Number(pressed('a','arrowleft'));
-    const speed=(z<6.97?1.28:2.2)*dt/Math.max(1,Math.hypot(f,s));
+    const speed=(z<6.97?.43:.64)*dt/Math.max(1,Math.hypot(f,s));
     const nx=x+(-Math.sin(yaw)*f+Math.cos(yaw)*s)*speed;
     const nz=z+(-Math.cos(yaw)*f-Math.sin(yaw)*s)*speed;
     if(valid(nx,z))x=nx;
     if(valid(x,nz))z=nz;
     if(opened)hinge.rotation.y=Math.min(1.66,hinge.rotation.y+dt*1.7);
     gate.hidden=opened||z>3.38||Math.abs(x)>.7;
-    eye=THREE.MathUtils.lerp(eye,ground(z)+1.65,1-Math.exp(-dt*13));
-    camera.position.set(x,eye,z);
+    eye=THREE.MathUtils.lerp(eye,ground(z)*2.5+1.65,1-Math.exp(-dt*13));
+    camera.position.set(x*4,eye,z*4);
     camera.rotation.set(pitch,yaw,0,'YXZ');
-    const name=z<2.4?'Torhalle':z<6.97?'Freitreppe':'Pfeile oder WASD · Ziehen zum Umsehen';
+    const name=z<-8.3?(x<-2?'Wachstube':x>2?'Vorratsraum':'Große Halle'):z<-1.9?'Innenhof':z<2.4?'Torhalle':z<6.97?'Freitreppe':'Pfeile oder WASD · Ziehen zum Umsehen';
     if(place.textContent!==name)place.textContent=name;
     renderer.render(scene,camera);
   });

@@ -450,7 +450,7 @@ async function start(){
     }
   }
   const ovalBoundary=[];
-  const sofaCenterZ=-3.59;
+  const sofaCenterZ=-2.79;
   function furnitureTexture(paint){
     const canvas=document.createElement('canvas');
     canvas.width=canvas.height=512;
@@ -661,9 +661,9 @@ async function start(){
           cushion.castShadow=true;
           exterior.add(cushion);
         }
-        upholstered(sofaX,1.085,-3.59,.449,.115,1.095,.25);
-        upholstered(sofaX+side*.32,1.45,-3.59,.155,.38,1.04,.32,-side*.13);
-        for(const z of [-4.23,-3.59,-2.95]){
+        upholstered(sofaX,1.085,sofaCenterZ,.449,.115,1.095,.25);
+        upholstered(sofaX+side*.32,1.45,sofaCenterZ,.155,.38,1.04,.32,-side*.13);
+        for(const z of [sofaCenterZ-.64,sofaCenterZ,sofaCenterZ+.64]){
           upholstered(sofaX-side*.04,1.265,z,.374,.095,.314,.31);
           const edge=new THREE.TorusGeometry(1,.012,8,64);
           const edgePoints=edge.attributes.position;
@@ -679,22 +679,22 @@ async function start(){
           exterior.add(piping);
           upholstered(sofaX+side*.254,1.50,z,.14,.29,.318,.39,-side*.19);
         }
-        for(const z of [-4.57,-2.61]){
+        for(const z of [sofaCenterZ-.98,sofaCenterZ+.98]){
           upholstered(sofaX,1.26,z,.449,.18,.13,.42);
           upholstered(sofaX-side*.012,1.408,z,.46,.091,.117,.55);
           for(const dx of [-.29,.29])surface(sofaX+dx,.958,z,.073,.128,.079,walnut);
         }
         const hem=new THREE.MeshStandardMaterial({color:0xa88e69,roughness:.95});
         const welt=new THREE.CatmullRomCurve3([
-          new THREE.Vector3(sofaX-side*.435,1.132,-4.62),
-          new THREE.Vector3(sofaX-side*.449,1.132,-4.43),
-          new THREE.Vector3(sofaX-side*.449,1.132,-3.59),
-          new THREE.Vector3(sofaX-side*.449,1.132,-2.75),
-          new THREE.Vector3(sofaX-side*.435,1.132,-2.56)
+          new THREE.Vector3(sofaX-side*.435,1.132,sofaCenterZ-1.03),
+          new THREE.Vector3(sofaX-side*.449,1.132,sofaCenterZ-.84),
+          new THREE.Vector3(sofaX-side*.449,1.132,sofaCenterZ),
+          new THREE.Vector3(sofaX-side*.449,1.132,sofaCenterZ+.84),
+          new THREE.Vector3(sofaX-side*.435,1.132,sofaCenterZ+1.03)
         ]);
         exterior.add(new THREE.Mesh(new THREE.TubeGeometry(welt,36,.008,8,false),hem));
-        obstacles.push({x:sofaX,z:-3.59,w:1.03,d:2.32});
-        const tableZ=-1.99;
+        obstacles.push({x:sofaX,z:sofaCenterZ,w:1.03,d:2.32});
+        const tableZ=sofaCenterZ+1.60;
         function turned(profile,material,x,y,z){
           const geometry=new THREE.LatheGeometry(profile.map(([r,h])=>new THREE.Vector2(r,h)),48);
           const mesh=new THREE.Mesh(geometry,material);
@@ -974,7 +974,7 @@ async function start(){
       const shadowMaterial=new THREE.MeshBasicMaterial({
         map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1
       });
-      for(const [x,z,w,d] of [[-2.10,-3.59,1.25,2.55],[2.10,-3.59,1.25,2.55],[0,-5.22,2.12,1.52],[0,sofaCenterZ,.87,1.21]]){
+      for(const [x,z,w,d] of [[-2.10,sofaCenterZ,1.25,2.55],[2.10,sofaCenterZ,1.25,2.55],[0,-5.22,2.12,1.52],[0,sofaCenterZ,.87,1.21]]){
         const shadow=new THREE.Mesh(new THREE.PlaneGeometry(w,d),shadowMaterial);
         shadow.rotation.x=-Math.PI/2;
         shadow.position.set(x,.920,z);
@@ -1444,6 +1444,33 @@ async function start(){
     flag.castShadow=true;
     exterior.add(flag);
     obstacles.push({x,z,w:.31,d:.31});
+  }
+  const chairFabric=new THREE.MeshStandardMaterial({color:0xd7bd77,roughness:.91});
+  grain(chairFabric,125,.10);
+  for(const side of [-1,1]){
+    const chair=new THREE.Group();
+    chair.position.set(side*1.12,.89,-.91);
+    chair.rotation.y=side*.26;
+    exterior.add(chair);
+    function chairPart(geometry,material,x,y,z){
+      const mesh=new THREE.Mesh(geometry,material);
+      mesh.position.set(x,y,z);
+      mesh.castShadow=mesh.receiveShadow=true;
+      chair.add(mesh);
+      return mesh;
+    }
+    chairPart(new THREE.BoxGeometry(.59,.16,.53),chairFabric,0,.31,0);
+    chairPart(new THREE.SphereGeometry(1,24,18),chairFabric,0,.42,-.028).scale.set(.295,.095,.264);
+    const back=chairPart(new THREE.SphereGeometry(1,24,18),chairFabric,0,.66,.241);
+    back.scale.set(.294,.32,.092);
+    back.rotation.x=.17;
+    for(const arm of [-1,1]){
+      chairPart(new THREE.SphereGeometry(1,24,18),chairFabric,arm*.278,.54,-.013).scale.set(.073,.092,.26);
+      for(const z of [-.20,.20]){
+        chairPart(new THREE.CylinderGeometry(.026,.018,.25,12),walnut,arm*.231,.125,z);
+      }
+    }
+    obstacles.push({x:side*1.12,z:-.91,w:.82,d:.78});
   }
   resoluteDesk(0,-5.22);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);

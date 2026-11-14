@@ -478,6 +478,24 @@ async function start(){
       ctx.stroke();
     }
   });
+  const tableVeneer=furnitureTexture(ctx=>{
+    const image=ctx.createImageData(512,512);
+    for(let y=0;y<512;y++)for(let x=0;x<512;x++){
+      const r=Math.hypot(x-255.5,y-255.5);
+      const u=Math.abs(x-255.5);
+      const grain=u+.018*y+5*Math.sin(y*.012+u*.029)+2*Math.sin(y*.028+u*.083);
+      const pores=Math.sin(grain*2.27+y*.054)*Math.sin(y*2.89+x*.17);
+      const figuring=6*Math.sin(grain*.18)+3*Math.sin(grain*.74)+2*pores;
+      const border=r>238?8:0;
+      const inlay=Math.abs(r-236)<1.35;
+      const i=(y*512+x)*4;
+      image.data[i]=inlay?144:103+figuring-border;
+      image.data[i+1]=inlay?103:61+figuring-border;
+      image.data[i+2]=inlay?62:38+figuring*.65-border;
+      image.data[i+3]=255;
+    }
+    ctx.putImageData(image,0,0);
+  });
   const veneer=furnitureTexture(ctx=>{
     for(let y=0;y<512;y++){
       ctx.beginPath();
@@ -704,28 +722,49 @@ async function start(){
           mesh.receiveShadow=true;
           exterior.add(mesh);
         }
-        turned([[0,0],[.321,0],[.348,.014],[.351,.03],[.365,.04],
-          [.365,.059],[.354,.073],[0,.073]],walnut,tableX,1.46,tableZ);
-        const top = new THREE.Mesh(new THREE.CircleGeometry(.35,64),
-          new THREE.MeshPhysicalMaterial({map:veneer,roughness:.37,clearcoat:.38}));
+        turned([[0,0],[.329,0],[.342,.007],[.342,.019],[.354,.022],
+          [.362,.033],[.365,.05],[.359,.065],[.348,.073],[0,.073]],walnut,tableX,1.46,tableZ);
+        const top=new THREE.Mesh(new THREE.CircleGeometry(.348,96),
+          new THREE.MeshPhysicalMaterial({
+            map:tableVeneer,roughness:.54,clearcoat:.14,clearcoatRoughness:.50
+          }));
         top.rotation.x=-Math.PI/2;
         top.position.set(tableX,1.534,tableZ);
         top.receiveShadow=true;
         exterior.add(top);
-        oval(tableX,1.444,tableZ,.302,.302,.041,walnut);
+        turned([[0,0],[.282,0],[.298,.008],[.302,.023],[.315,.047],
+          [.315,.089],[.321,.104],[0,.104]],walnut,tableX,1.361,tableZ);
+        const footBrass=new THREE.MeshStandardMaterial({
+          color:0x9d7544,metalness:.66,roughness:.43
+        });
         for(let i=0;i<3;i++){
           const angle=i*Math.PI*2/3;
-          const dx=Math.cos(angle),dz=Math.sin(angle);
+          const dx=side*Math.cos(angle),dz=Math.sin(angle);
           const curve=new THREE.CatmullRomCurve3([
-            new THREE.Vector3(tableX+dx*.23,1.439,tableZ+dz*.23),
-            new THREE.Vector3(tableX+dx*.284,1.284,tableZ+dz*.284),
-            new THREE.Vector3(tableX+dx*.224,1.076,tableZ+dz*.224),
-            new THREE.Vector3(tableX+dx*.277,.926,tableZ+dz*.277)
+            new THREE.Vector3(tableX+dx*.232,1.416,tableZ+dz*.232),
+            new THREE.Vector3(tableX+dx*.294,1.322,tableZ+dz*.294),
+            new THREE.Vector3(tableX+dx*.257,1.201,tableZ+dz*.257),
+            new THREE.Vector3(tableX+dx*.217,1.087,tableZ+dz*.217),
+            new THREE.Vector3(tableX+dx*.267,.916,tableZ+dz*.267)
           ]);
-          const leg=new THREE.Mesh(new THREE.TubeGeometry(curve,24,.029,12,false),walnut);
-          leg.castShadow=true;
+          const geometry=new THREE.TubeGeometry(curve,32,.035,12,false);
+          const positions=geometry.attributes.position;
+          for(let ring=0;ring<=32;ring++){
+            const t=ring/32,center=curve.getPointAt(t);
+            const scale=1.22-.69*t+.13*Math.sin(Math.PI*t);
+            for(let k=0;k<=12;k++){
+              const j=ring*13+k;
+              positions.setXYZ(j,center.x+(positions.getX(j)-center.x)*scale,
+                center.y+(positions.getY(j)-center.y)*scale,
+                center.z+(positions.getZ(j)-center.z)*scale);
+            }
+          }
+          geometry.computeVertexNormals();
+          const leg=new THREE.Mesh(geometry,walnut);
+          leg.castShadow=leg.receiveShadow=true;
           exterior.add(leg);
-          oval(tableX+dx*.277,.923,tableZ+dz*.277,.036,.036,.045,brass);
+          turned([[0,0],[.023,0],[.025,.005],[.023,.018],[.019,.026],[0,.026]],
+            footBrass,tableX+dx*.267,.891,tableZ+dz*.267);
         }
         const porcelain=new THREE.MeshPhysicalMaterial({
           map:ceramic,roughness:.29,clearcoat:.7,clearcoatRoughness:.27

@@ -694,7 +694,8 @@ async function start(){
         ]);
         exterior.add(new THREE.Mesh(new THREE.TubeGeometry(welt,36,.008,8,false),hem));
         obstacles.push({x:sofaX,z:sofaCenterZ,w:1.03,d:2.32});
-        const tableZ=sofaCenterZ+1.60;
+        const tableX=side*1.88;
+        const tableZ=sofaCenterZ+1.56;
         function turned(profile,material,x,y,z){
           const geometry=new THREE.LatheGeometry(profile.map(([r,h])=>new THREE.Vector2(r,h)),48);
           const mesh=new THREE.Mesh(geometry,material);
@@ -704,36 +705,36 @@ async function start(){
           exterior.add(mesh);
         }
         turned([[0,0],[.321,0],[.348,.014],[.351,.03],[.365,.04],
-          [.365,.059],[.354,.073],[0,.073]],walnut,sofaX,1.46,tableZ);
+          [.365,.059],[.354,.073],[0,.073]],walnut,tableX,1.46,tableZ);
         const top = new THREE.Mesh(new THREE.CircleGeometry(.35,64),
           new THREE.MeshPhysicalMaterial({map:veneer,roughness:.37,clearcoat:.38}));
         top.rotation.x=-Math.PI/2;
-        top.position.set(sofaX,1.534,tableZ);
+        top.position.set(tableX,1.534,tableZ);
         top.receiveShadow=true;
         exterior.add(top);
-        oval(sofaX,1.444,tableZ,.302,.302,.041,walnut);
+        oval(tableX,1.444,tableZ,.302,.302,.041,walnut);
         for(let i=0;i<3;i++){
           const angle=i*Math.PI*2/3;
           const dx=Math.cos(angle),dz=Math.sin(angle);
           const curve=new THREE.CatmullRomCurve3([
-            new THREE.Vector3(sofaX+dx*.23,1.439,tableZ+dz*.23),
-            new THREE.Vector3(sofaX+dx*.284,1.284,tableZ+dz*.284),
-            new THREE.Vector3(sofaX+dx*.224,1.076,tableZ+dz*.224),
-            new THREE.Vector3(sofaX+dx*.277,.926,tableZ+dz*.277)
+            new THREE.Vector3(tableX+dx*.23,1.439,tableZ+dz*.23),
+            new THREE.Vector3(tableX+dx*.284,1.284,tableZ+dz*.284),
+            new THREE.Vector3(tableX+dx*.224,1.076,tableZ+dz*.224),
+            new THREE.Vector3(tableX+dx*.277,.926,tableZ+dz*.277)
           ]);
           const leg=new THREE.Mesh(new THREE.TubeGeometry(curve,24,.029,12,false),walnut);
           leg.castShadow=true;
           exterior.add(leg);
-          oval(sofaX+dx*.277,.923,tableZ+dz*.277,.036,.036,.045,brass);
+          oval(tableX+dx*.277,.923,tableZ+dz*.277,.036,.036,.045,brass);
         }
         const porcelain=new THREE.MeshPhysicalMaterial({
           map:ceramic,roughness:.29,clearcoat:.7,clearcoatRoughness:.27
         });
-        oval(sofaX,1.551,tableZ,.115,.115,.036,brass);
+        oval(tableX,1.551,tableZ,.115,.115,.036,brass);
         turned([[0,0],[.079,0],[.081,.034],[.108,.071],[.116,.133],
           [.102,.196],[.063,.254],[.051,.295],[.060,.306],[0,.306]],
-          porcelain,sofaX,1.569,tableZ);
-        oval(sofaX,1.889,tableZ,.029,.029,.069,brass);
+          porcelain,tableX,1.569,tableZ);
+        oval(tableX,1.889,tableZ,.029,.029,.069,brass);
         const shadeMaterial=new THREE.MeshStandardMaterial({
           color:0xf0debd,emissive:0xa97c4b,emissiveIntensity:.22,roughness:.95,side:THREE.DoubleSide
         });
@@ -748,16 +749,16 @@ async function start(){
         }
         shadeGeometry.computeVertexNormals();
         const shade=new THREE.Mesh(shadeGeometry,shadeMaterial);
-        shade.position.set(sofaX,2.04,tableZ);
+        shade.position.set(tableX,2.04,tableZ);
         exterior.add(shade);
         for(const [y,r] of [[1.90,.255],[2.18,.144]]){
           const binding=new THREE.Mesh(new THREE.TorusGeometry(r,.008,8,80),shadeMaterial);
           binding.rotation.x=Math.PI/2;
-          binding.position.set(sofaX,y,tableZ);
+          binding.position.set(tableX,y,tableZ);
           exterior.add(binding);
         }
-        oval(sofaX,2.195,tableZ,.018,.018,.026,brass);
-        obstacles.push({x:sofaX,z:tableZ,w:.74,d:.58});
+        oval(tableX,2.195,tableZ,.018,.018,.026,brass);
+        obstacles.push({x:tableX,z:tableZ,w:.74,d:.74});
       }
       else{
         surface(x,1.06,-5.55,1.19,.34,.67,walnut);
@@ -1459,13 +1460,22 @@ async function start(){
       chair.add(mesh);
       return mesh;
     }
-    chairPart(new THREE.BoxGeometry(.59,.16,.53),chairFabric,0,.31,0);
-    chairPart(new THREE.SphereGeometry(1,24,18),chairFabric,0,.42,-.028).scale.set(.295,.095,.264);
-    const back=chairPart(new THREE.SphereGeometry(1,24,18),chairFabric,0,.66,.241);
-    back.scale.set(.294,.32,.092);
-    back.rotation.x=.17;
+    function padding(x,y,z,w,h,d,softness){
+      const geometry=new THREE.SphereGeometry(1,40,28);
+      const points=geometry.attributes.position;
+      const round=value=>Math.sign(value)*Math.abs(value)**softness;
+      for(let i=0;i<points.count;i++){
+        points.setXYZ(i,w*round(points.getX(i)),h*round(points.getY(i)),d*round(points.getZ(i)));
+      }
+      geometry.computeVertexNormals();
+      return chairPart(geometry,chairFabric,x,y,z);
+    }
+    padding(0,.31,0,.295,.094,.266,.30);
+    padding(0,.42,-.028,.267,.077,.23,.43);
+    padding(0,.66,.209,.30,.31,.105,.52).rotation.x=.13;
     for(const arm of [-1,1]){
-      chairPart(new THREE.SphereGeometry(1,24,18),chairFabric,arm*.278,.54,-.013).scale.set(.073,.092,.26);
+      padding(arm*.257,.415,.002,.069,.132,.249,.40);
+      padding(arm*.260,.538,-.012,.082,.073,.249,.55);
       for(const z of [-.20,.20]){
         chairPart(new THREE.CylinderGeometry(.026,.018,.25,12),walnut,arm*.231,.125,z);
       }

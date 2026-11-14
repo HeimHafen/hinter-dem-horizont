@@ -263,7 +263,24 @@ async function start(){
     surface(x,3.78,z,opening,1.82,.23,material);
     surface(x,3.38,z,opening+.36,.14,.4,stone);
   }
+  model.getObjectByName('Cube.004').visible=false;
+  surface(0,.42,0,47.6,.84,24.6,stone);
   surface(0,.82,0,36,.14,16,marble);
+  const floorCanvas=document.createElement('canvas');
+  floorCanvas.width=512; floorCanvas.height=256;
+  const floorPaint=floorCanvas.getContext('2d');
+  for(let row=0;row<8;row++)for(let col=0;col<8;col++){
+    floorPaint.fillStyle=(row+col)%2?'#e1d5bf':'#a99b87';
+    floorPaint.fillRect(col*64,row*32,63,31);
+  }
+  const floorMap=new THREE.CanvasTexture(floorCanvas);
+  floorMap.colorSpace=THREE.SRGBColorSpace;
+  floorMap.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  const hallFloor=new THREE.MeshStandardMaterial({map:floorMap,roughness:.58});
+  surface(0,.891,4,35.7,.008,7.7,hallFloor);
+  const runner=new THREE.MeshStandardMaterial({color:0x6e242b,roughness:.94});
+  surface(0,.9,4.1,32,.014,1.72,runner);
+
   surface(0,4.73,0,36,.12,16,plaster);
   partition(-18,0,.24,16,plaster);
   partition(18,0,.24,16,plaster);
@@ -285,6 +302,23 @@ async function start(){
     mesh.scale.set(rx,1,rz);
     mesh.receiveShadow=true;
     exterior.add(mesh);
+  }
+  function chandelierFixture(x,z,count){
+    oval(x,4.58,z,.19,.19,.075,gold);
+    oval(x,4.26,z,.026,.026,.62,brass);
+    oval(x,3.92,z,.2,.2,.16,gold);
+    for(let i=0;i<count;i++){
+      const a=i*Math.PI*2/count;
+      const dx=Math.cos(a), dz=Math.sin(a);
+      const curve=new THREE.CatmullRomCurve3([
+        new THREE.Vector3(x,3.94,z),
+        new THREE.Vector3(x+dx*.29,3.78,z+dz*.29),
+        new THREE.Vector3(x+dx*.55,3.94,z+dz*.55)
+      ]);
+      exterior.add(new THREE.Mesh(new THREE.TubeGeometry(curve,9,.018,5,false),gold));
+      oval(x+dx*.55,3.95,z+dz*.55,.062,.062,.038,brass);
+      oval(x+dx*.55,4.038,z+dz*.55,.024,.024,.147,glow);
+    }
   }
   function ovalWalls(material){
     const width=3.37, depth=3.69, count=48;
@@ -348,15 +382,19 @@ async function start(){
     surface(room.x,3.15,-7.65,1.06,1.22,.10,gold);
     surface(room.x,3.15,-7.58,.88,1.04,.06,walnut);
     }
-    surface(room.x,4.25,-4,.07,.84,.07,brass);
-    for(let candle=0;candle<8;candle++){
-      const angle=candle*Math.PI/4;
-      const dx=Math.cos(angle), dz=Math.sin(angle);
-      const arm=new THREE.Mesh(new THREE.BoxGeometry(.52,.035,.052),brass);
-      arm.position.set(room.x+dx*.25,3.91,-4+dz*.25);
-      arm.rotation.y=-angle;
-      exterior.add(arm);
-      surface(room.x+dx*.51,4.02,-4+dz*.51,.065,.18,.065,glow);
+    chandelierFixture(room.x,-4,index===2?10:6);
+    if(index===2){
+      const drape=new THREE.MeshStandardMaterial({color:0xb59962,roughness:.91});
+      const sash=new THREE.MeshStandardMaterial({color:0x7595ab,roughness:.28});
+      surface(0,2.65,-7.56,1.62,2.65,.08,trim);
+      surface(0,2.65,-7.49,1.41,2.43,.07,sash);
+      for(const x of [-.46,0,.46])surface(x,2.65,-7.441,.032,2.43,.04,trim);
+      for(const y of [1.89,2.65,3.41])surface(0,y,-7.441,1.41,.031,.04,trim);
+      for(const side of [-1,1])for(let i=0;i<6;i++){
+        const x=side*(.74+i*.075);
+        surface(x,2.61,-7.35+Math.sin(i*1.7)*.04,.11,2.84,.14,drape);
+      }
+      surface(0,4.06,-7.35,2.43,.21,.17,gold);
     }
     if(index===1||index===3){
       oval(room.x,1.57,-4.5,.63,.46,.09,walnut);
@@ -375,9 +413,9 @@ async function start(){
     scene.add(chandelier);
   }
   for(const x of [-13,-6.5,0,6.5,13]){
-    surface(x,4.45,4.1,.45,.16,.45,glow);
-    const hallLight=new THREE.PointLight(0xffe9cf,23,9);
-    hallLight.position.set(x,4.28,4.1);
+    chandelierFixture(x,4.1,6);
+    const hallLight=new THREE.PointLight(0xffe9cf,16,9);
+    hallLight.position.set(x,3.77,4.1);
     scene.add(hallLight);
   }
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);

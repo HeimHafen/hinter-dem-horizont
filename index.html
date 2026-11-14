@@ -712,8 +712,8 @@ async function start(){
         ]);
         exterior.add(new THREE.Mesh(new THREE.TubeGeometry(welt,36,.008,8,false),hem));
         obstacles.push({x:sofaX,z:sofaCenterZ,w:1.03,d:2.32});
-        const tableX=side*1.66;
-        const tableZ=sofaCenterZ+1.51;
+        const tableX=side*1.24;
+        const tableZ=sofaCenterZ+1.47;
         function turned(profile,material,x,y,z){
           const geometry=new THREE.LatheGeometry(profile.map(([r,h])=>new THREE.Vector2(r,h)),48);
           const mesh=new THREE.Mesh(geometry,material);

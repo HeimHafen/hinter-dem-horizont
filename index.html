@@ -582,24 +582,41 @@ async function start(){
         const linen=new THREE.MeshStandardMaterial({color:0xcdb894,roughness:.94});
         grain(linen,145,.13);
         const sofaX=side*2.10;
-        function upholstered(px,y,z,w,h,d,rx=0){
-          const cushion=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),linen);
-          cushion.scale.set(w,h,d);
+        function upholstered(px,y,z,w,h,d,roundness,tilt=0){
+          const geometry=new THREE.SphereGeometry(1,32,24);
+          const points=geometry.attributes.position;
+          const rounded=value=>Math.sign(value)*Math.pow(Math.abs(value),roundness);
+          for(let i=0;i<points.count;i++){
+            points.setXYZ(i,rounded(points.getX(i))*w,rounded(points.getY(i))*h,rounded(points.getZ(i))*d);
+          }
+          geometry.computeVertexNormals();
+          const cushion=new THREE.Mesh(geometry,linen);
           cushion.position.set(px,y,z);
-          cushion.rotation.z=rx;
+          cushion.rotation.z=tilt;
           cushion.receiveShadow=true;
           cushion.castShadow=true;
           exterior.add(cushion);
         }
-        surface(sofaX,1.07,-3.59,.79,.29,2.10,linen);
-        for(const z of [-4.24,-3.59,-2.94]){
-          upholstered(sofaX,1.26,z,.415,.145,.355);
-          upholstered(sofaX+side*.32,1.53,z,.145,.36,.355,-side*.17);
+        upholstered(sofaX,1.085,-3.59,.449,.115,1.095,.25);
+        upholstered(sofaX+side*.32,1.45,-3.59,.155,.38,1.04,.32,-side*.13);
+        for(const z of [-4.23,-3.59,-2.95]){
+          upholstered(sofaX-side*.04,1.265,z,.374,.095,.314,.31);
+          upholstered(sofaX+side*.254,1.50,z,.14,.29,.318,.39,-side*.19);
         }
-        for(const z of [-4.61,-2.57]){
-          upholstered(sofaX,1.37,z,.46,.165,.15);
-          for(const dx of [-.29,.29])surface(sofaX+dx,.98,z,.095,.17,.10,walnut);
+        for(const z of [-4.57,-2.61]){
+          upholstered(sofaX,1.26,z,.449,.18,.13,.42);
+          upholstered(sofaX-side*.012,1.408,z,.46,.091,.117,.55);
+          for(const dx of [-.29,.29])surface(sofaX+dx,.958,z,.073,.128,.079,walnut);
         }
+        const hem=new THREE.MeshStandardMaterial({color:0xa88e69,roughness:.95});
+        const welt=new THREE.CatmullRomCurve3([
+          new THREE.Vector3(sofaX-side*.435,1.132,-4.62),
+          new THREE.Vector3(sofaX-side*.449,1.132,-4.43),
+          new THREE.Vector3(sofaX-side*.449,1.132,-3.59),
+          new THREE.Vector3(sofaX-side*.449,1.132,-2.75),
+          new THREE.Vector3(sofaX-side*.435,1.132,-2.56)
+        ]);
+        exterior.add(new THREE.Mesh(new THREE.TubeGeometry(welt,36,.008,8,false),hem));
         obstacles.push({x:sofaX,z:-3.59,w:1.03,d:2.32});
         const tableZ=-1.99;
         oval(sofaX,1.52,tableZ,.37,.29,.072,walnut);

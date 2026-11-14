@@ -1054,24 +1054,45 @@ async function start(){
     canvas.width=512;canvas.height=256;
     const ink=canvas.getContext('2d');
     const pixels=ink.createImageData(512,256);
+    let seed=891;
     for(let y=0;y<256;y++)for(let x=0;x<512;x++){
-      const grain=y+3*Math.sin(x*.014+y*.11)+1.1*Math.sin(x*.037+y*.032);
-      const shade=7*Math.sin(grain*1.8)+4*Math.sin(grain*4.7)+7*Math.sin(grain*.23);
+      seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+      const warped=y+4*Math.sin(x*.009+y*.028)+2*Math.sin(x*.019+y*.074);
+      const growth=Math.sin(warped*.27+1.2*Math.sin(warped*.081));
+      const pores=Math.pow(Math.max(0,Math.cos(warped*2.7+Math.sin(x*.027))),9);
+      const flecks=(seed/4294967296-.5)*4;
+      const shade=8*growth-8*pores+5*Math.sin(warped*.063)+flecks;
       const i=4*(y*512+x);
-      pixels.data[i]=113+shade;
-      pixels.data[i+1]=68+shade*.65;
-      pixels.data[i+2]=42+shade*.45;
+      pixels.data[i]=115+shade;
+      pixels.data[i+1]=73+shade*.76;
+      pixels.data[i+2]=47+shade*.51;
       pixels.data[i+3]=255;
     }
     ink.putImageData(pixels,0,0);
-    const grain=new THREE.CanvasTexture(canvas);
-    grain.colorSpace=THREE.SRGBColorSpace;
-    grain.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-    const oak=new THREE.MeshStandardMaterial({map:grain,roughness:.37});
-    const carved=new THREE.MeshStandardMaterial({color:0x94613c,roughness:.49});
-    const recess=new THREE.MeshStandardMaterial({color:0x492717,roughness:.55});
-    const hide=new THREE.MeshStandardMaterial({color:0x251e19,roughness:.86});
-    const hardware=new THREE.MeshStandardMaterial({color:0x947247,metalness:.66,roughness:.35});
+    const woodMap=new THREE.CanvasTexture(canvas);
+    woodMap.colorSpace=THREE.SRGBColorSpace;
+    woodMap.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    const oak=new THREE.MeshPhysicalMaterial({
+      map:woodMap,bumpMap:woodMap,bumpScale:.0014,roughness:.46,clearcoat:.24,clearcoatRoughness:.41
+    });
+    const carved=new THREE.MeshStandardMaterial({color:0x94613c,roughness:.53});
+    const recess=new THREE.MeshStandardMaterial({color:0x492717,roughness:.61});
+    const leather=document.createElement('canvas');
+    leather.width=leather.height=256;
+    const leatherInk=leather.getContext('2d');
+    const pores=leatherInk.createImageData(256,256);
+    for(let i=0;i<pores.data.length;i+=4){
+      seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+      const tone=84+(seed>>>26);
+      pores.data[i]=pores.data[i+1]=pores.data[i+2]=tone;
+      pores.data[i+3]=255;
+    }
+    leatherInk.putImageData(pores,0,0);
+    const leatherBump=new THREE.CanvasTexture(leather);
+    const hide=new THREE.MeshStandardMaterial({
+      color:0x302620,bumpMap:leatherBump,bumpScale:.002,roughness:.81
+    });
+    const hardware=new THREE.MeshStandardMaterial({color:0x947247,metalness:.66,roughness:.40});
     function part(geometry,material,x,y,z){
       const mesh=new THREE.Mesh(geometry,material);
       mesh.position.set(x,y,z);
@@ -1108,6 +1129,17 @@ async function start(){
     topLayer(1.775,1.164,.025,.714,.018,recess);
     topLayer(1.749,1.141,.023,.7,.014,oak);
     topLayer(1.56,.952,.035,.82,.004,hide);
+    const paper=new THREE.MeshStandardMaterial({color:0xe0d6bd,roughness:.89});
+    const folder=new THREE.MeshStandardMaterial({color:0x3c2722,roughness:.66});
+    const folio=block(-.47,.831,-.19,.31,.014,.24,folder);
+    folio.rotation.y=.09;
+    const sheets=block(-.47,.843,-.19,.278,.009,.215,paper);
+    sheets.rotation.y=.09;
+    const pen=part(new THREE.CylinderGeometry(.0045,.0045,.126,12),hide,.31,.833,-.075);
+    pen.rotation.z=Math.PI/2;
+    const nib=part(new THREE.ConeGeometry(.0043,.019,12),hardware,.381,.833,-.075);
+    nib.rotation.z=-Math.PI/2;
+
     for(const [w,d] of [[1.532,.924],[1.516,.908]]){
       const border=roundedOutline(w,d,.03).getPoints(8);
       const path=new THREE.CurvePath();

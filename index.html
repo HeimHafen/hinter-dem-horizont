@@ -22,7 +22,6 @@ try { await start(); } catch(error) {
 async function start(){
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0xb7c6ca);
-  scene.fog=new THREE.FogExp2(0xb7c6ca,.023);
   const camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.035,120);
   const renderer=new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));

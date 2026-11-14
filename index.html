@@ -306,7 +306,11 @@ async function start(){
   function chandelierFixture(x,z,count){
     oval(x,4.58,z,.19,.19,.075,gold);
     oval(x,4.26,z,.026,.026,.62,brass);
+    const crystal=count===10?new THREE.MeshPhysicalMaterial({
+      color:0xffebcf,metalness:.23,roughness:.19,clearcoat:1
+    }):null;
     oval(x,3.92,z,.2,.2,.16,gold);
+    if(crystal)oval(x,3.79,z,.145,.145,.095,crystal);
     for(let i=0;i<count;i++){
       const a=i*Math.PI*2/count;
       const dx=Math.cos(a), dz=Math.sin(a);
@@ -317,7 +321,16 @@ async function start(){
       ]);
       exterior.add(new THREE.Mesh(new THREE.TubeGeometry(curve,9,.018,5,false),gold));
       oval(x+dx*.55,3.95,z+dz*.55,.062,.062,.038,brass);
-      oval(x+dx*.55,4.038,z+dz*.55,.024,.024,.147,glow);
+      oval(x+dx*.55,4.038,z+dz*.55,.019,.019,.14,crystal?trim:glow);
+      if(crystal){
+        oval(x+dx*.55,4.122,z+dz*.55,.012,.012,.033,glow);
+        for(const [radius,height] of [[.31,3.70],[.49,3.79]]){
+          const drop=new THREE.Mesh(new THREE.OctahedronGeometry(.047),crystal);
+          drop.scale.set(.58,1.4,.58);
+          drop.position.set(x+dx*radius,height,z+dz*radius);
+          exterior.add(drop);
+        }
+      }
     }
   }
   function framedPanel(x,y,z,w,h,material){
@@ -370,6 +383,9 @@ async function start(){
       geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
       geometry.setIndex(indices);
       geometry.computeVertexNormals();
+      const uv=[];
+      for(let i=0;i<=count;i++)uv.push(i/count,bottom/3.79,i/count,top/3.79);
+      geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
       const facing=finish===material?finish:finish.clone();
       facing.side=THREE.DoubleSide;
       const wall=new THREE.Mesh(geometry,facing);
@@ -379,6 +395,10 @@ async function start(){
     band(.89,4.68,0,material);
     band(.89,1.04,.055,trim);
     band(1.74,1.80,.047,trim);
+    band(1.715,1.74,.034,trim);
+    band(1.80,1.82,.058,trim);
+    band(4.35,4.39,.026,trim);
+    band(4.57,4.61,.094,trim);
     band(4.39,4.47,.045,trim);
     band(4.47,4.58,.075,trim);
     for(let i=0;i<=count;i++){
@@ -389,7 +409,35 @@ async function start(){
   const ovalBoundary=[];
   for(const [index,room] of rooms.entries()){
     const m=new THREE.MeshStandardMaterial({color:room.color,roughness:.87});
-    if(index===2)grain(m,32,.12);
+    if(index===2){
+      const silk=document.createElement('canvas');
+      silk.width=silk.height=256;
+      const brush=silk.getContext('2d');
+      brush.fillStyle='#a9bfd4';
+      brush.fillRect(0,0,256,256);
+      for(const [x,y] of [[64,64],[192,192]]){
+        brush.save();
+        brush.translate(x,y);
+        for(let petal=0;petal<8;petal++){
+          brush.rotate(Math.PI/4);
+          brush.beginPath();
+          brush.moveTo(0,3);
+          brush.bezierCurveTo(-21,17,-17,43,0,52);
+          brush.bezierCurveTo(17,43,21,17,0,3);
+          brush.fillStyle='#bccbdd';
+          brush.fill();
+          brush.strokeStyle='#92abc5';
+          brush.stroke();
+        }
+        brush.restore();
+      }
+      m.map=new THREE.CanvasTexture(silk);
+      m.map.colorSpace=THREE.SRGBColorSpace;
+      m.map.wrapS=m.map.wrapT=THREE.RepeatWrapping;
+      m.map.repeat.set(21,4);
+      m.color.setHex(0x587da9);
+      m.roughness=.76;
+    }
     openingWall(room.x,0,7.2,1.74,m);
     if(index)partition(room.x-3.6,-4,.24,8,plaster);
     if(index===2){
@@ -601,15 +649,21 @@ async function start(){
         for(let i=0;i<vertices.count;i++){
           const u=vertices.getX(i)+.5;
           const v=vertices.getY(i)+.5;
-          const gathering=.67+.17*Math.cos(v*Math.PI*2)+.047*Math.sin(v*6.28+u*2);
-          vertices.setXYZ(i,side*(1.12+(u-.5)*gathering),1.19+v*2.8+.035*Math.sin(u*18)*(1-v),
-            -7.30+.067*Math.sin(u*12*Math.PI+v*.8)+.15*Math.sin(v*Math.PI));
+          const gathering=.43+.56*Math.pow(Math.abs(v-.47),.63);
+          vertices.setXYZ(i,side*(1.19+(u-.5)*gathering+.12*Math.sin(v*Math.PI)),1.19+v*2.8+.035*Math.sin(u*18)*(1-v),
+            -7.30+.069*Math.sin(u*15*Math.PI+v*.65)+.021*Math.sin(u*30*Math.PI)+.10*Math.sin(v*Math.PI));
         }
         cloth.computeVertexNormals();
         const curtain=new THREE.Mesh(cloth,drape);
         curtain.receiveShadow=true;
         exterior.add(curtain);
-        surface(side*1.12,2.53,-7.24,.43,.054,.22,gold);
+        const cord=new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side*.99,2.63,-7.28),
+          new THREE.Vector3(side*1.19,2.53,-7.09),
+          new THREE.Vector3(side*1.43,2.61,-7.22)
+        ]);
+        exterior.add(new THREE.Mesh(new THREE.TubeGeometry(cord,16,.016,8,false),gold));
+        oval(side*1.43,2.46,-7.20,.035,.035,.22,gold);
       }
       const windowLight=new THREE.PointLight(0xc4dcff,2.4,5);
       windowLight.position.set(0,2.9,-6.95);
@@ -644,7 +698,7 @@ async function start(){
       }
       obstacles.push({x:room.x,z:-4.65,w:2.35,d:1.30});
     }
-    const chandelier=new THREE.PointLight(0xffe7c6,21,8);
+    const chandelier=new THREE.PointLight(0xffe7c6,index===2?10:21,8);
     chandelier.position.set(room.x,3.77,-4);
     scene.add(chandelier);
   }

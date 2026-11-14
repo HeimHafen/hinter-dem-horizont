@@ -279,16 +279,49 @@ async function start(){
   const gold=new THREE.MeshStandardMaterial({color:0xb28b4d,roughness:.47,metalness:.33});
   const hearth=new THREE.MeshStandardMaterial({color:0x251d19,roughness:.88});
   const trim=new THREE.MeshStandardMaterial({color:0xe9dcc1,roughness:.69});
+  function oval(x,y,z,rx,rz,height,material){
+    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(1,1,height,48),material);
+    mesh.position.set(x,y,z);
+    mesh.scale.set(rx,1,rz);
+    mesh.receiveShadow=true;
+    exterior.add(mesh);
+  }
+  function ovalWalls(material){
+    const width=3.37, depth=3.69, count=48;
+    for(let step=0;step<count;step++){
+      const angle=(step+.5)*Math.PI*2/count;
+      const x=Math.sin(angle)*width,z=-4+Math.cos(angle)*depth;
+      if(z>-1&&Math.abs(x)<.99)continue;
+      const wall=new THREE.Mesh(new THREE.BoxGeometry(.53,3.8,.14),material);
+      wall.position.set(x,2.79,z);
+      wall.rotation.y=Math.atan2(Math.sin(angle)*depth,Math.cos(angle)*width);
+      exterior.add(wall);
+      ovalBoundary.push({x,z});
+      const cornice=new THREE.Mesh(new THREE.BoxGeometry(.53,.12,.24),trim);
+      cornice.position.set(x,4.49,z);
+      cornice.rotation.y=wall.rotation.y;
+      exterior.add(cornice);
+    }
+  }
+  const ovalBoundary=[];
   for(const [index,room] of rooms.entries()){
     const m=new THREE.MeshStandardMaterial({color:room.color,roughness:.87});
     openingWall(room.x,0,7.2,1.74,m);
     if(index)partition(room.x-3.6,-4,.24,8,plaster);
-    surface(room.x,.902,-4.2,4.6,.025,4.7,m);
-    surface(room.x,.925,-4.2,4.23,.025,4.31,m);
+    if(index===2){
+      ovalWalls(m);
+      oval(0,.91,-4,2.91,3.12,.033,gold);
+      oval(0,.934,-4,2.78,2.98,.027,m);
+      oval(0,.953,-4,1.05,1.25,.014,gold);
+      oval(0,.963,-4,.91,1.10,.012,m);
+    }else{
+      surface(room.x,.907,-4.2,4.6,.033,4.7,gold);
+      surface(room.x,.931,-4.2,4.38,.024,4.48,m);
+    }
     surface(room.x,2.61,-7.83,6.6,2.75,.09,m);
     for(const side of [-1,1]){
-      const x=room.x+side*2.48;
-      surface(x,1.06,-5.55,1.19,.34,.67,walnut);
+      const x=room.x+side*(index===2?1.83:2.48);
+      surface(x,1.06,-5.55,1.19,.34,.67,index===2?gold:walnut);
       surface(x,1.27,-5.55,1.13,.15,.6,m);
       surface(x,1.47,-5.83,1.13,.39,.14,m);
       obstacles.push({x,z:-5.55,w:1.19,d:.67});
@@ -296,6 +329,7 @@ async function start(){
       surface(x,3.28,-7.60,.18,.21,.18,glow);
     }
     // Decorative details stay against the wall to keep the visitor route clear.
+    if(index!==2){
     for(const y of [1.06,1.76,4.22,4.49]){
       surface(room.x,y,-7.70,6.93,.08,.13,trim);
     }
@@ -313,6 +347,7 @@ async function start(){
     surface(room.x,.93,-7.43,2.02,.08,.65,marble);
     surface(room.x,3.15,-7.65,1.06,1.22,.10,gold);
     surface(room.x,3.15,-7.58,.88,1.04,.06,walnut);
+    }
     surface(room.x,4.25,-4,.07,.84,.07,brass);
     for(let candle=0;candle<8;candle++){
       const angle=candle*Math.PI/4;
@@ -322,6 +357,11 @@ async function start(){
       arm.rotation.y=-angle;
       exterior.add(arm);
       surface(room.x+dx*.51,4.02,-4+dz*.51,.065,.18,.065,glow);
+    }
+    if(index===1||index===3){
+      oval(room.x,1.57,-4.5,.63,.46,.09,walnut);
+      surface(room.x,1.25,-4.5,.14,.63,.14,walnut);
+      obstacles.push({x:room.x,z:-4.5,w:1.26,d:.92});
     }
     if(index===0){
       surface(room.x,1.66,-4.65,2.35,.095,1.30,walnut);
@@ -371,6 +411,7 @@ async function start(){
     if(Math.abs(px)>31||pz>53||pz< -7.8)return false;
     if(pz>=7.96&&pz<12.43&&(Math.abs(px)>1.23||door.rotation.y<1.45))return false;
     if(pz<8&&Math.abs(px)>17.8)return false;
+    if(ovalBoundary.some(point=>Math.hypot(px-point.x,pz-point.z)<.33))return false;
     if(obstacles.some(({x,z,w,d})=>Math.abs(px-x)<w/2+.21&&Math.abs(pz-z)<d/2+.21))return false;
     if(pz>12.75&&pz<17.75&&Math.abs(Math.abs(px)-7.7)<.42)return false;
     return bounds.every(([cx,cz])=>Math.hypot(px-cx,pz-cz)>.98);
@@ -396,7 +437,7 @@ async function start(){
     eye=THREE.MathUtils.lerp(eye,ground(x,z)+1.65,1-Math.exp(-dt*14));
     camera.position.set(x,eye,z);
     camera.rotation.set(pitch,yaw,0,'YXZ');
-    place.textContent=z<-.25?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Galerie':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
+    place.textContent=z<-.25?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Cross Hall':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
     sky.position.copy(camera.position);
     sky.material.uniforms.drift.value+=dt*.022;
     renderer.render(scene,camera);

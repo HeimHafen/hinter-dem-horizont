@@ -352,33 +352,105 @@ async function start(){
     exterior.add(cushion);
   }
   function ovalWalls(material){
-    const width=3.37, depth=3.69, count=48;
-    for(let step=0;step<count;step++){
-      const angle=(step+.5)*Math.PI*2/count;
-      const x=Math.sin(angle)*width,z=-4+Math.cos(angle)*depth;
-      if(z>-1&&Math.abs(x)<.99)continue;
-      const wall=new THREE.Mesh(new THREE.BoxGeometry(.53,3.8,.14),material);
-      wall.position.set(x,2.79,z);
-      wall.rotation.y=Math.atan2(Math.sin(angle)*depth,Math.cos(angle)*width);
+    const width=3.37, depth=3.69, count=128;
+    const opening=.32;
+    function band(bottom,top,inset,finish){
+      const positions=[],indices=[];
+      for(let i=0;i<=count;i++){
+        const angle=opening+(2*Math.PI-2*opening)*i/count;
+        const x=Math.sin(angle)*(width-inset);
+        const z=-4+Math.cos(angle)*(depth-inset);
+        positions.push(x,bottom,z,x,top,z);
+        if(i<count){
+          const j=i*2;
+          indices.push(j,j+1,j+2,j+2,j+1,j+3);
+        }
+      }
+      const geometry=new THREE.BufferGeometry();
+      geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      const facing=finish===material?finish:finish.clone();
+      facing.side=THREE.DoubleSide;
+      const wall=new THREE.Mesh(geometry,facing);
+      wall.receiveShadow=true;
       exterior.add(wall);
-      ovalBoundary.push({x,z});
-      const cornice=new THREE.Mesh(new THREE.BoxGeometry(.53,.12,.24),trim);
-      cornice.position.set(x,4.49,z);
-      cornice.rotation.y=wall.rotation.y;
-      exterior.add(cornice);
+    }
+    band(.89,4.68,0,material);
+    band(.89,1.04,.055,trim);
+    band(1.74,1.80,.047,trim);
+    band(4.39,4.47,.045,trim);
+    band(4.47,4.58,.075,trim);
+    for(let i=0;i<=count;i++){
+      const angle=opening+(2*Math.PI-2*opening)*i/count;
+      ovalBoundary.push({x:Math.sin(angle)*width,z:-4+Math.cos(angle)*depth});
     }
   }
   const ovalBoundary=[];
   for(const [index,room] of rooms.entries()){
     const m=new THREE.MeshStandardMaterial({color:room.color,roughness:.87});
+    if(index===2)grain(m,32,.12);
     openingWall(room.x,0,7.2,1.74,m);
     if(index)partition(room.x-3.6,-4,.24,8,plaster);
     if(index===2){
       ovalWalls(m);
-      oval(0,.91,-4,2.91,3.12,.033,gold);
-      oval(0,.934,-4,2.78,2.98,.027,m);
-      oval(0,.953,-4,1.05,1.25,.014,gold);
-      oval(0,.963,-4,.91,1.10,.012,m);
+      const textile=document.createElement('canvas');
+      textile.width=textile.height=768;
+      const brush=textile.getContext('2d');
+      brush.fillStyle='#263d58';
+      brush.fillRect(0,0,768,768);
+      brush.translate(384,384);
+      function ring(radius,color,width){
+        brush.beginPath();
+        brush.arc(0,0,radius,0,Math.PI*2);
+        brush.strokeStyle=color;
+        brush.lineWidth=width;
+        brush.stroke();
+      }
+      for(const [radius,color,width] of [[368,'#ceaa69',5],[350,'#872f35',23],[332,'#c6a570',3],[312,'#ab986e',2],[133,'#877656',2],[111,'#d2b782',3]]){
+        ring(radius,color,width);
+      }
+      for(let i=0;i<48;i++){
+        brush.rotate(Math.PI/24);
+        brush.fillStyle=i%2?'#cab581':'#8c7354';
+        for(const r of [350,306,128]){
+          brush.beginPath();
+          brush.ellipse(r,0,3,8,Math.PI/4,0,Math.PI*2);
+          brush.fill();
+        }
+      }
+      for(let i=0;i<16;i++){
+        brush.rotate(Math.PI/8);
+        brush.beginPath();
+        brush.moveTo(24,0);
+        brush.bezierCurveTo(65,-33,95,-19,106,0);
+        brush.bezierCurveTo(95,19,65,33,24,0);
+        brush.strokeStyle=i%2?'#b79f71':'#776d58';
+        brush.lineWidth=2;
+        brush.stroke();
+      }
+      const weave=new THREE.CanvasTexture(textile);
+      weave.colorSpace=THREE.SRGBColorSpace;
+      weave.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+      const carpet=new THREE.MeshStandardMaterial({map:weave,roughness:1});
+      grain(carpet,100,.16);
+      oval(0,.906,-4,2.86,3.07,.022,carpet);
+      const parquet=new THREE.MeshStandardMaterial({color:0x916446,roughness:.68});
+      grain(parquet,25,.14);
+      const woodPieces=new THREE.InstancedMesh(new THREE.BoxGeometry(.24,.012,.685),parquet,240);
+      const piece=new THREE.Object3D();
+      let count=0;
+      for(let row=0;row<11;row++)for(let col=0;col<27;col++){
+        const x=(col-13)*.246,z=-7.49+row*.69+(col%2)*.26;
+        if((x/3.19)**2+((z+4)/3.48)**2>=1)continue;
+        piece.position.set(x,.892,z);
+        piece.updateMatrix();
+        woodPieces.setMatrixAt(count,piece.matrix);
+        woodPieces.setColorAt(count++,new THREE.Color().setScalar(.79+.21*((row*13+col*7)%11)/10));
+      }
+      woodPieces.count=count;
+      woodPieces.receiveShadow=true;
+      exterior.add(woodPieces);
     }else{
       surface(room.x,.907,-4.2,4.6,.033,4.7,gold);
       surface(room.x,.931,-4.2,4.38,.024,4.48,m);
@@ -419,7 +491,7 @@ async function start(){
     chandelierFixture(room.x,-4,index===2?10:6);
     if(index===2){
       const drape=new THREE.MeshStandardMaterial({color:0xb59962,roughness:.91});
-      const sash=new THREE.MeshStandardMaterial({color:0x7595ab,roughness:.28});
+      const sash=new THREE.MeshStandardMaterial({color:0x819bac,roughness:.65});
       surface(0,2.65,-7.56,1.62,2.65,.08,trim);
       surface(0,2.65,-7.49,1.41,2.43,.07,sash);
       for(const x of [-.46,0,.46])surface(x,2.65,-7.441,.032,2.43,.04,trim);
@@ -441,9 +513,21 @@ async function start(){
         exterior.add(curtain);
         surface(side*1.12,2.53,-7.24,.43,.054,.22,gold);
       }
-      const windowLight=new THREE.PointLight(0xc4dcff,5,5);
+      const windowLight=new THREE.PointLight(0xc4dcff,2.4,5);
       windowLight.position.set(0,2.9,-6.95);
       scene.add(windowLight);
+      oval(0,1.68,-6.75,.57,.33,.075,walnut);
+      oval(0,1.65,-6.75,.585,.345,.025,gold);
+      for(const x of [-.36,.36])for(const z of [-6.9,-6.6]){
+        const leg=new THREE.Mesh(new THREE.CylinderGeometry(.045,.022,.71,12),gold);
+        leg.position.set(x,1.28,z);
+        exterior.add(leg);
+      }
+      obstacles.push({x:0,z:-6.75,w:1.17,d:.69});
+      for(const x of [-2.25,2.25]){
+        framedPanel(x,3.2,-6.54,.71,.93,gold);
+        surface(x,3.2,-6.56,.66,.88,.05,walnut);
+      }
       surface(0,4.06,-7.35,2.43,.21,.17,gold);
     }
     if(index===1||index===3){

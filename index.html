@@ -879,9 +879,9 @@ async function start(){
       const grain=y+3*Math.sin(x*.014+y*.11)+1.1*Math.sin(x*.037+y*.032);
       const shade=7*Math.sin(grain*1.8)+4*Math.sin(grain*4.7)+7*Math.sin(grain*.23);
       const i=4*(y*512+x);
-      pixels.data[i]=100+shade;
-      pixels.data[i+1]=57+shade*.65;
-      pixels.data[i+2]=34+shade*.45;
+      pixels.data[i]=113+shade;
+      pixels.data[i+1]=68+shade*.65;
+      pixels.data[i+2]=42+shade*.45;
       pixels.data[i+3]=255;
     }
     ink.putImageData(pixels,0,0);
@@ -889,7 +889,7 @@ async function start(){
     grain.colorSpace=THREE.SRGBColorSpace;
     grain.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
     const oak=new THREE.MeshStandardMaterial({map:grain,roughness:.37});
-    const carved=new THREE.MeshStandardMaterial({color:0x805132,roughness:.43});
+    const carved=new THREE.MeshStandardMaterial({color:0x94613c,roughness:.49});
     const recess=new THREE.MeshStandardMaterial({color:0x492717,roughness:.55});
     const hide=new THREE.MeshStandardMaterial({color:0x251e19,roughness:.86});
     const hardware=new THREE.MeshStandardMaterial({color:0x947247,metalness:.66,roughness:.35});
@@ -979,11 +979,31 @@ async function start(){
     for(const side of [-1,1]){
       block(side*.308,.388,.58,.024,.4,.016,carved);
       block(0,.388+side*.188,.58,.625,.024,.016,carved);
-      for(let feather=0;feather<8;feather++){
-        const angle=(feather+1)*.078;
-        bead([[side*.028,.39,.604],[side*(.075+angle*.14),.437+angle*.02,.615],
-          [side*(.121+angle*.13),.49-angle*.18,.606]],.007);
+      const wing=new THREE.Shape();
+      wing.moveTo(.02,.005);
+      wing.bezierCurveTo(.105,.076,.164,.066,.226,.115);
+      wing.bezierCurveTo(.233,.06,.193,.014,.145,-.01);
+      wing.bezierCurveTo(.11,-.028,.053,-.018,.02,.005);
+      const wingMesh=part(new THREE.ExtrudeGeometry(wing,{
+        depth:.008,bevelSize:.003,bevelThickness:.003,bevelSegments:2
+      }),carved,0,.398,.586);
+      wingMesh.scale.x=side;
+      for(let feather=0;feather<9;feather++){
+        const t=feather/8;
+        bead([[side*(.047+.105*t),.405+.039*t,.601],
+          [side*(.083+.117*t),.385+.043*t,.608],
+          [side*(.086+.14*t),.367+.093*t,.597]],.004);
       }
+      const scrollCenter=side*.254;
+      for(const y of [.298,.483]){
+        bead(Array.from({length:21},(_,i)=>{
+          const t=i/20,a=t*Math.PI*2.1,r=.039*(1-t);
+          return [scrollCenter+side*r*Math.cos(a),y+r*.82*Math.sin(a),.592];
+        }),.004);
+      }
+    }
+    for(let i=-2;i<=2;i++){
+      bead([[i*.006,.358,.6],[i*.013,.337,.606],[i*.019,.317,.597]],.005);
     }
     const shield=new THREE.Shape();
     shield.moveTo(-.043,.022);shield.lineTo(.043,.022);shield.lineTo(.036,-.036);

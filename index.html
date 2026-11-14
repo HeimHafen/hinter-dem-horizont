@@ -450,6 +450,69 @@ async function start(){
     }
   }
   const ovalBoundary=[];
+  function furnitureTexture(paint){
+    const canvas=document.createElement('canvas');
+    canvas.width=canvas.height=512;
+    paint(canvas.getContext('2d'));
+    const texture=new THREE.CanvasTexture(canvas);
+    texture.colorSpace=THREE.SRGBColorSpace;
+    texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    return texture;
+  }
+  const upholstery=furnitureTexture(ctx=>{
+    ctx.fillStyle='#c8b493';
+    ctx.fillRect(0,0,512,512);
+    for(let i=0;i<512;i++){
+      ctx.fillStyle=i%4<2?'#ffffff18':'#49331b19';
+      ctx.fillRect(i,0,1,512);
+      ctx.fillRect(0,i,512,1);
+    }
+    for(let row=0;row<8;row++)for(let col=0;col<8;col++){
+      const x=col*64+32,y=row*64+32;
+      ctx.strokeStyle='#886e4e46';
+      ctx.beginPath();
+      ctx.moveTo(x-23,y);
+      ctx.quadraticCurveTo(x,y-29,x+23,y);
+      ctx.quadraticCurveTo(x,y+29,x-23,y);
+      ctx.stroke();
+    }
+  });
+  const veneer=furnitureTexture(ctx=>{
+    for(let y=0;y<512;y++){
+      ctx.beginPath();
+      for(let x=0;x<=512;x+=4){
+        const line=y+2.4*Math.sin(x*.018+y*.046)+1.8*Math.sin(x*.037+y*.1);
+        if(x===0)ctx.moveTo(x,line);else ctx.lineTo(x,line);
+      }
+      const tone=15*Math.sin(y*.24)+8*Math.sin(y*1.7)+7*Math.cos(y*.063);
+      ctx.strokeStyle=`rgb(${97+tone},${52+tone*.66},${30+tone*.4})`;
+      ctx.lineWidth=2;
+      ctx.stroke();
+    }
+  });
+  const ceramic=furnitureTexture(ctx=>{
+    ctx.fillStyle='#e4d3ae';
+    ctx.fillRect(0,0,512,512);
+    for(const y of [94,110,376,392]){
+      ctx.fillStyle='#8d7049';
+      ctx.fillRect(0,y,512,4);
+    }
+    for(let i=0;i<8;i++){
+      const x=i*64+32;
+      ctx.strokeStyle='#3d6175';
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.moveTo(x-15,148);
+      ctx.bezierCurveTo(x+28,210,x-31,270,x+15,342);
+      ctx.stroke();
+      for(let j=0;j<5;j++){
+        ctx.fillStyle=j%2?'#986044':'#57746a';
+        ctx.beginPath();
+        ctx.ellipse(x+(j%2?10:-10),171+j*34,6,13,j%2?.64:-.64,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+  });
   for(const [index,room] of rooms.entries()){
     const m=new THREE.MeshStandardMaterial({color:room.color,roughness:.87});
     if(index===2){
@@ -579,7 +642,7 @@ async function start(){
     for(const side of [-1,1]){
       const x=room.x+side*(index===2?1.83:2.48);
       if(index===2){
-        const linen=new THREE.MeshStandardMaterial({color:0xcdb894,roughness:.94});
+        const linen=new THREE.MeshStandardMaterial({map:upholstery,roughness:.90});
         grain(linen,145,.13);
         const sofaX=side*2.10;
         function upholstered(px,y,z,w,h,d,roundness,tilt=0){
@@ -641,6 +704,12 @@ async function start(){
         }
         turned([[0,0],[.321,0],[.348,.014],[.351,.03],[.365,.04],
           [.365,.059],[.354,.073],[0,.073]],walnut,sofaX,1.46,tableZ);
+        const top = new THREE.Mesh(new THREE.CircleGeometry(.35,64),
+          new THREE.MeshPhysicalMaterial({map:veneer,roughness:.37,clearcoat:.38}));
+        top.rotation.x=-Math.PI/2;
+        top.position.set(sofaX,1.534,tableZ);
+        top.receiveShadow=true;
+        exterior.add(top);
         oval(sofaX,1.444,tableZ,.302,.302,.041,walnut);
         for(let i=0;i<3;i++){
           const angle=i*Math.PI*2/3;
@@ -657,7 +726,7 @@ async function start(){
           oval(sofaX+dx*.277,.923,tableZ+dz*.277,.036,.036,.045,brass);
         }
         const porcelain=new THREE.MeshPhysicalMaterial({
-          color:0xd7c7a8,roughness:.33,clearcoat:.7,clearcoatRoughness:.27
+          map:ceramic,roughness:.29,clearcoat:.7,clearcoatRoughness:.27
         });
         oval(sofaX,1.551,tableZ,.115,.115,.036,brass);
         turned([[0,0],[.079,0],[.081,.034],[.108,.071],[.116,.133],

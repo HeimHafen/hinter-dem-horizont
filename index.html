@@ -437,6 +437,7 @@ async function start(){
       oval(0,.906,-4,2.86,3.07,.022,carpet);
       const parquet=new THREE.MeshStandardMaterial({color:0x916446,roughness:.68});
       grain(parquet,25,.14);
+      oval(0,.892,-4,3.34,3.66,.009,parquet);
       const woodPieces=new THREE.InstancedMesh(new THREE.BoxGeometry(.24,.012,.685),parquet,240);
       const piece=new THREE.Object3D();
       let count=0;
@@ -491,11 +492,36 @@ async function start(){
     chandelierFixture(room.x,-4,index===2?10:6);
     if(index===2){
       const drape=new THREE.MeshStandardMaterial({color:0xb59962,roughness:.91});
-      const sash=new THREE.MeshStandardMaterial({color:0x819bac,roughness:.65});
-      surface(0,2.65,-7.56,1.62,2.65,.08,trim);
-      surface(0,2.65,-7.49,1.41,2.43,.07,sash);
-      for(const x of [-.46,0,.46])surface(x,2.65,-7.441,.032,2.43,.04,trim);
-      for(const y of [1.89,2.65,3.41])surface(0,y,-7.441,1.41,.031,.04,trim);
+      const scenery=document.createElement('canvas');
+      scenery.width=384;scenery.height=512;
+      const brush=scenery.getContext('2d');
+      const skyWash=brush.createLinearGradient(0,0,0,512);
+      skyWash.addColorStop(0,'#789fbe');
+      skyWash.addColorStop(.62,'#d7e2df');
+      skyWash.addColorStop(.63,'#75835b');
+      skyWash.addColorStop(1,'#4b6542');
+      brush.fillStyle=skyWash;
+      brush.fillRect(0,0,384,512);
+      for(let i=0;i<115;i++){
+        const x=(i*97)%407-12,y=329-(i*67)%54;
+        const size=7+i%17;
+        brush.fillStyle=['#4b6244','#657551','#77835d','#536b4e'][i%4];
+        brush.beginPath();
+        brush.ellipse(x,y,size,size*.69,0,0,Math.PI*2);
+        brush.fill();
+      }
+      const view=new THREE.CanvasTexture(scenery);
+      view.colorSpace=THREE.SRGBColorSpace;
+      const sash=new THREE.MeshBasicMaterial({map:view,color:0xe7edf0});
+      surface(0,2.65,-7.57,1.41,2.43,.04,sash);
+      for(const side of [-1,1]){
+        surface(side*.77,2.65,-7.36,.13,2.63,.44,trim);
+        surface(side*.70,2.65,-7.46,.041,2.43,.21,stone);
+      }
+      surface(0,1.39,-7.34,1.73,.115,.49,trim);
+      surface(0,3.92,-7.35,1.67,.115,.42,trim);
+      for(const x of [-.46,0,.46])surface(x,2.65,-7.52,.032,2.43,.055,trim);
+      for(const y of [1.89,2.65,3.41])surface(0,y,-7.52,1.41,.031,.055,trim);
       drape.side=THREE.DoubleSide;
       for(const side of [-1,1]){
         const cloth=new THREE.PlaneGeometry(1,1,48,26);
@@ -503,8 +529,8 @@ async function start(){
         for(let i=0;i<vertices.count;i++){
           const u=vertices.getX(i)+.5;
           const v=vertices.getY(i)+.5;
-          const gathering=.69+.19*Math.cos(v*Math.PI*2);
-          vertices.setXYZ(i,side*(1.12+(u-.5)*gathering),1.19+v*2.8,
+          const gathering=.67+.17*Math.cos(v*Math.PI*2)+.047*Math.sin(v*6.28+u*2);
+          vertices.setXYZ(i,side*(1.12+(u-.5)*gathering),1.19+v*2.8+.035*Math.sin(u*18)*(1-v),
             -7.30+.067*Math.sin(u*12*Math.PI+v*.8)+.15*Math.sin(v*Math.PI));
         }
         cloth.computeVertexNormals();
@@ -527,6 +553,10 @@ async function start(){
       for(const x of [-2.25,2.25]){
         framedPanel(x,3.2,-6.54,.71,.93,gold);
         surface(x,3.2,-6.56,.66,.88,.05,walnut);
+        const painting=new THREE.Mesh(new THREE.PlaneGeometry(.65,.87),
+          new THREE.MeshBasicMaterial({map:view,color:0xc1a47f}));
+        painting.position.set(x,3.2,-6.53);
+        exterior.add(painting);
       }
       surface(0,4.06,-7.35,2.43,.21,.17,gold);
     }

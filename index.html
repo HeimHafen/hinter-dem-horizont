@@ -17,7 +17,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const place=document.querySelector('#place'), gate=document.querySelector('#gate');
 try { await start(); } catch(error) {
   console.error(error);
-  place.textContent='Die Burg konnte nicht geladen werden. Prüfe den Upload von Felsenburg.glb und lade die Seite neu.';
+  place.textContent='Spielstart fehlgeschlagen: '+error.message;
 }
 async function start(){
   const scene=new THREE.Scene();
@@ -33,10 +33,16 @@ async function start(){
   const sun=new THREE.DirectionalLight(0xffe1bc,2.2);
   sun.position.set(-9,14,10);
   scene.add(sun);
-  const model=(await new GLTFLoader().loadAsync('./Felsenburg.glb')).scene;
-  const facade=model.getObjectByName('Cube.3326');
-  const arch=model.getObjectByName('Spitzbogen');
-  const oldDoor=model.getObjectByName('Spitzbogen.001');
+  const gltf=await new GLTFLoader().loadAsync('./Felsenburg.glb');
+  const model=gltf.scene;
+  const originalNames=new Map();
+  model.traverse(object=>{
+    const index=gltf.parser.associations.get(object)?.nodes;
+    if(index!==undefined)originalNames.set(gltf.parser.json.nodes[index].name,object);
+  });
+  const facade=originalNames.get('Cube.3326');
+  const arch=originalNames.get('Spitzbogen');
+  const oldDoor=originalNames.get('Spitzbogen.001');
   if(!facade||!arch||!oldDoor)throw Error('Unerwartete Modellversion');
   facade.visible=arch.visible=oldDoor.visible=false;
   scene.add(model);

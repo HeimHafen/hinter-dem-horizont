@@ -18,6 +18,7 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <script type="module">
 import * as THREE from 'three';
 import {baueSpielfigur} from './spielfigur.js?v=2';
+import {baueCrossHallPremium} from './cross-hall-premium.js?v=1';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=5';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
@@ -704,7 +705,10 @@ async function start(){
   partition(-18,0,.24,16,plaster);
   partition(18,0,.24,16,plaster);
   partition(0,-8,36,.24,plaster);
-  openingWall(0,7.96,36,2.85,plaster);
+  // Wide opening to the Entrance Hall: replaces the fictional almost-solid wall.
+  partition(-11.55,7.96,12.9,.23,plaster);
+  partition(11.55,7.96,12.9,.23,plaster);
+  surface(0,4.29,7.96,10.3,.68,.23,plaster);
   const rooms=[
     {name:'State Dining Room',x:-14.4,color:0x9f937c},
     {name:'Red Room',x:-7.2,color:0x88393d},
@@ -1523,22 +1527,9 @@ async function start(){
     chandelier.position.set(room.x,3.77,-4);
     scene.add(chandelier);
   }
-  for(const x of [-13,-6.5,0,6.5,13]){
-    chandelierFixture(x,4.1,6);
-    const hallLight=new THREE.PointLight(0xffe9cf,16,9);
-    hallLight.position.set(x,3.77,4.1);
-    scene.add(hallLight);
-  }
-  for(const x of [-15,-10,-5,5,10,15]){
-    framedPanel(x,2.45,7.80,2.85,2.63,trim);
-    framedPanel(x,2.45,7.75,2.64,2.41,stone);
-    surface(x,1.02,7.76,3.18,.16,.12,trim);
-  }
-  for(const z of [3.34,4.86])surface(0,.913,z,31.95,.008,.027,gold);
-  for(const z of [.17,7.74]){
-    surface(0,4.53,z,35.75,.13,.17,trim);
-    surface(0,4.42,z,35.75,.054,.12,trim);
-  }
+  // Historical Cross Hall treatment is now isolated in its own JS module.
+  baueCrossHallPremium(THREE,scene,exterior,renderer,obstacles);
+
   function resoluteDesk(x,z){
     const desk=new THREE.Group();
     desk.name='Resolute Desk';
@@ -2009,6 +2000,8 @@ async function start(){
     button.onpointerup=button.onpointercancel=button.onlostpointercapture=event=>touchKeys.delete(event.pointerId);
   }
   let x=0,z=innerWidth<innerHeight?52:42,yaw=0,pitch=.08,look=null,opened=false;
+  // Optional direct preview URL: index.html#cross-hall (default game start unchanged).
+  if(location.hash==='#cross-hall'){x=12.1;z=3.97;yaw=Math.PI/2;pitch=.04;opened=true;}
   let previousX=0,previousY=0;
   const castleView=document.querySelector('#castle-view');
   castleView.hidden=false;

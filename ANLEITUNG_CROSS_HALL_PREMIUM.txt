@@ -1,0 +1,79 @@
+HINTER DEM HORIZONT — CROSS HALL PREMIUM V1
+Stand: 15.11.2026
+
+WAS IST NEU?
+- Der vorherige nahezu leere Flur besitzt jetzt einen gemusterten Marmorfußboden
+  in historisch orientierter Farbgebung mit dezenten Spiegelungen.
+- Breiterer roter Teppich mit gewebter goldfarbener Bordüre.
+- Sechs helle Säulen als Verbindung zur nördlichen Entrance Hall.
+- Zwei Kristallleuchter anstatt der vorherigen fünf einfachen Flurleuchten.
+- Dezent gerahmte Deckenkassetten und Stuck-/Gesimsprofile.
+- Klassische Türrahmen, dekorative Endportale, Wandnischen.
+- Rote Sitzmöbel mit vergoldeten Details, vier bronzene Lichtständer.
+- Vier gemalte Porträt-Platzhalter in Bilderrahmen.
+- Schmale Kollisionsboxen für Säulen, Leuchten und Bänke.
+- Prozedurale Materialien, keine zusätzlich heruntergeladenen Foto-Assets.
+- Direktzugang: index.html#cross-hall (zum Anschauen aus Spielperspektive).
+
+WICHTIG: DIES IST NOCH KEINE EXAKTE 1:1-REKONSTRUKTION
+Architektur und Möblierung wurden an den Quellen orientiert, aber nicht
+vollständig vermessen. Einzelne Türmaße, Bildwerke und Zierprofile sind frei
+angenähert. Die Porträts sind ausdrücklich künstlerische Platzhalter, keine
+behaupteten historischen Originale. Die Endportale sind vorerst nicht begehbar.
+Nur der Cross-Hall-Bereich wurde verändert. Alle übrigen Räume bleiben in
+ihrem vorherigen Zustand, einschließlich einzelner noch unzutreffender
+Raumbezeichnungen. Insbesondere ist der bisher als 'Oval Office' benannte
+Stateroom kein historisch korrekter Raumname an dieser Position.
+
+EINBAU — SICHERER WEG MIT NUR ZWEI DATEIEN
+1. ZUERST den bestehenden Projektstand als ZIP sichern (separate Original-
+   Sicherung ist dieser Lieferung beigefügt).
+2. In Working Copy / GitHub im bisherigen Repository auf denselben Stand
+   gehen, auf dem das letzte 'Vorplatz-Feinschliff'-Paket basiert.
+3. index.html ersetzen (vollständige Datei).
+4. cross-hall-premium.js NEU im Stammverzeichnis anlegen.
+5. Commit und Push zunächst auf einen TESTBRANCH, nicht direkt auf main.
+6. Web-App öffnen, für einen schnellen Blick die URL um '#cross-hall'
+   ergänzen (z. B. https://DEIN-PROJEKT.github.io/.../#cross-hall).
+7. Bewegen mit Pfeiltasten oder WASD, Kamera durch Ziehen verändern,
+   'Egoansicht' testen; anschließend normalen Start ohne #cross-hall prüfen.
+8. Nur nach einem Test in Safari/iPhone und Desktop zu main übernehmen.
+
+ALTERNATIVE
+Die Komplett-ZIP enthält alle bisherigen 9 Dateien unverändert (außer
+index.html) und die eine neue Datei sowie diese Anleitung. Dateien im
+ZIP liegen direkt im Projektstamm; zum Upload vorher entpacken.
+
+VALIDIERUNG
+- Neue und bestehende JavaScript-Modulsyntax mit Node.js geprüft.
+- Strukturtests: Originalmodelle und Imports erhalten, fünf frühere Hall-
+  leuchten entfernt, zwei neue Kronleuchter, sechs Säulen und Testeinstieg.
+- Laufzeit-Smoketest des neuen Geometriemoduls mit Three.js-Schnittstellen-
+  Simulation erfolgreich (496 Objekte, vier Lichter, 12 Kollisionsboxen).
+- Der tatsächliche WebGL-/iPhone-Lauf wurde NICHT in einem echten Safari-
+  Browser validiert; diese Prüfung steht noch aus. Auch keine exakte
+  fotogrammetrische Vermessung.
+
+QUELLEN ZUM RAUM
+White House Historical Association:
+https://www.whitehousehistory.org/videos/the-cross-and-entrance-halls-white-house-video-tour
+Archiviertes White House — Entrance and Cross Halls:
+https://georgewbush-whitehouse.archives.gov/history/whtour/halls.html
+Archivierte Raumübersicht des Weißen Hauses:
+https://obamawhitehouse.archives.gov/about/inside-white-house/rooms
+National Park Service — historische Broschüre:
+https://irma.nps.gov/DataStore/FileSource/Get/2278656?filename=WHHO1_306_006.PDF.pdf
+
+LIZENZHINWEIS (BESTANDSDATEIEN)
+Das mitgelieferte Burg-Hohenzollern-Modell stammt laut ursprünglichem
+Projektpaket von LAD BW/Christoph Steffen unter CC BY-NC.
+Diese Lizenz verlangt die Namensnennung und lässt kommerzielle Nutzung
+nicht ohne zusätzliche Erlaubnis zu. Unverändert übernehmen, Credits behalten.
+
+Beispiel-Commit-Zusammenfassung:
+Cross Hall: historisch orientierter Marmor, Säulen und Kristallleuchter
+
+Optionale detaillierte Informationen:
+Cross Hall mit eigenständigem Three.js-Modul, modelliertem Kassettenplafond,
+sechs Marmorsäulen, zwei Adam-Stil-Leuchtern, roten Sitzmöbeln, neuen
+Materialien und Kollisionsboxen; restliche Spielwelt unverändert.

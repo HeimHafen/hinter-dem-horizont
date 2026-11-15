@@ -2,12 +2,24 @@
 <html lang="de"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Hinter dem Horizont · Weißes Haus</title>
-<meta name="build" content="Cross Hall V3 · 15.11.2026">
+<meta name="build" content="Cross Hall V4 · 15.11.2026">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#202923;color:#fff7e4;font:16px system-ui}
 canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overflow-wrap:anywhere;position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;pointer-events:none;background:#17201ee8;padding:12px 16px;border-radius:12px}h1{font:24px Georgia;margin:0 0 5px}
 #controls{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:16px;display:grid;grid-template-columns:repeat(3,54px);gap:5px}button{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;height:54px;background:#18211eea;color:inherit;border:1px solid #b4ac95;border-radius:12px;font:inherit;touch-action:none}#gate{position:fixed;right:16px;bottom:max(25px,env(safe-area-inset-bottom));padding:0 14px}
 #ansicht{position:fixed;right:16px;top:calc(max(16px,env(safe-area-inset-top)) + 88px);height:44px;padding:0 12px}
+
+/* V4 mobile polish: allow the architecture to dominate the narrow viewport. */
+@media(max-width:600px){
+ header{top:max(10px,env(safe-area-inset-top));left:12px;padding:9px 13px;border-radius:12px;max-width:calc(100% - 24px);box-shadow:0 6px 26px #141b1830}
+ header h1{font-size:clamp(19px,5vw,24px);line-height:1.15;margin-bottom:3px}
+ header #place{font-size:13px}
+ #ansicht{right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 76px);height:42px;font-size:14px}
+ #controls{bottom:max(12px,env(safe-area-inset-bottom));left:12px;grid-template-columns:repeat(3,49px);gap:5px}
+ #controls button{height:49px;font-size:20px}
+ #castle-view{right:12px!important;bottom:80px!important;height:44px;font-size:14px}
+}
+@media(max-width:390px){header{max-width:calc(100% - 96px)}header h1{font-size:19px}#castle-view{max-width:calc(100% - 190px)!important}}
 </style>
 <header><h1>Hinter dem Horizont</h1><div id="place">Weißes Haus wird geladen …</div></header>
 <div id="controls" hidden style="display:none"><span></span><button data-key="w" aria-label="Vorwärts">↑</button><span></span><button data-key="a" aria-label="Links">←</button><button data-key="s" aria-label="Zurück">↓</button><button data-key="d" aria-label="Rechts">→</button></div>
@@ -19,7 +31,7 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <script type="module">
 import * as THREE from 'three';
 import {baueSpielfigur} from './spielfigur.js?v=2';
-import {baueCrossHallV3,ladeCrossHallAssetsV3,versperrtCrossHallV3} from './cross-hall-v3.js?v=3';
+import {baueCrossHallV4,ladeCrossHallAssetsV4,versperrtCrossHallV4} from './cross-hall-v4.js?v=4';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=5';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
@@ -1533,8 +1545,9 @@ async function start(){
   }
   // Historical Cross Hall treatment is now isolated in its own JS module.
   // All textures preload before the first game frame: no blank paintings / late decoration.
-  const crossHallAssets=await ladeCrossHallAssetsV3(THREE,renderer);
-  baueCrossHallV3(THREE,scene,exterior,renderer,obstacles,crossHallAssets);
+  const crossHallAssets=await ladeCrossHallAssetsV4(THREE,renderer);
+  crossHallAssets.environment=windowEnvironment.texture;
+  baueCrossHallV4(THREE,scene,exterior,renderer,obstacles,crossHallAssets);
 
   function resoluteDesk(x,z){
     const desk=new THREE.Group();
@@ -2007,7 +2020,7 @@ async function start(){
   }
   let x=0,z=innerWidth<innerHeight?52:42,yaw=0,pitch=.08,look=null,opened=false;
   // Optional direct preview URL: index.html#cross-hall (default game start unchanged).
-  if(location.hash==='#cross-hall'){x=16.2;z=3.95;yaw=Math.PI/2;pitch=.015;opened=true;}
+  if(location.hash==='#cross-hall'){x=16.35;z=3.95;yaw=Math.PI/2;pitch=-.035;opened=true;}
   let previousX=0,previousY=0;
   const castleView=document.querySelector('#castle-view');
   castleView.hidden=false;
@@ -2055,7 +2068,7 @@ async function start(){
     if(Math.hypot(px,pz-fountainZ)<fountainRadius+.25)return false;
     if(Math.abs(px)>31||pz>burgFuss-.4||pz< -7.8)return false;
     if(pz>=7.96&&pz<12.43&&(Math.abs(px)>1.23||door.rotation.y<1.45))return false;
-    if(versperrtCrossHallV3(px,pz))return false;
+    if(versperrtCrossHallV4(px,pz))return false;
     if(pz<8&&px>17.8)return false;
     if(pz<8&&px< -20.4)return false;
     if(pz<8&&px< -17.8&&(pz<2.86||pz>5.04))return false;

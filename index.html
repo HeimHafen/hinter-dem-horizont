@@ -6,15 +6,18 @@
 *{box-sizing:border-box}body{margin:0;background:#202923;color:#fff7e4;font:16px system-ui}
 canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overflow-wrap:anywhere;position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;pointer-events:none;background:#17201ee8;padding:12px 16px;border-radius:12px}h1{font:24px Georgia;margin:0 0 5px}
 #controls{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:16px;display:grid;grid-template-columns:repeat(3,54px);gap:5px}button{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;height:54px;background:#18211eea;color:inherit;border:1px solid #b4ac95;border-radius:12px;font:inherit;touch-action:none}#gate{position:fixed;right:16px;bottom:max(25px,env(safe-area-inset-bottom));padding:0 14px}
+#ansicht{position:fixed;right:16px;top:calc(max(16px,env(safe-area-inset-top)) + 88px);height:44px;padding:0 12px}
 </style>
 <header><h1>Hinter dem Horizont</h1><div id="place">Weißes Haus wird geladen …</div></header>
 <div id="controls" hidden style="display:none"><span></span><button data-key="w" aria-label="Vorwärts">↑</button><span></span><button data-key="a" aria-label="Links">←</button><button data-key="s" aria-label="Zurück">↓</button><button data-key="d" aria-label="Rechts">→</button></div>
 <button id="castle-view" style="position:fixed;right:16px;bottom:90px;padding:0 12px;max-width:calc(100% - 32px)" hidden>Zur Burg schauen</button>
 <button id="burg-aktion" type="button" hidden style="position:fixed;right:16px;bottom:calc(88px + env(safe-area-inset-bottom));padding:0 12px;max-width:calc(100% - 32px)">Burgtor betreten</button>
+<button id="ansicht" type="button" hidden>Egoansicht</button>
 <button id="gate" hidden>Tür öffnen</button>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
+import {baueSpielfigur} from './spielfigur.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=5';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
@@ -1897,12 +1900,28 @@ async function start(){
     if(pz<19.31)return .86;
     return .86-.166*Math.min(4,Math.ceil((pz-19.31)/.31));
   }
+  const figur=baueSpielfigur(THREE,scene);
+  const ansicht=document.querySelector('#ansicht');
+  let drittePerson=true;
+  ansicht.hidden=false;
+  function wechsleAnsicht(){
+    drittePerson=!drittePerson;
+    ansicht.textContent=drittePerson?'Egoansicht':'Figur zeigen';
+  }
+  ansicht.addEventListener('click',wechsleAnsicht);
+  addEventListener('keydown',event=>{
+    if(!event.repeat&&event.key.toLowerCase()==='v')wechsleAnsicht();
+  });
   let last=performance.now(),eye=1.68;
+  let kameradistanz=0;
+  let blickrichtung=0;
+
   renderer.setAnimationLoop(now=>{
     const dt=Math.min(.05,(now-last)/1000);last=now;
     const f=Number(pressed('w','arrowup'))-Number(pressed('s','arrowdown'));
     const s=Number(pressed('d','arrowright'))-Number(pressed('a','arrowleft'));
     const speed=2.8*dt/Math.max(1,Math.hypot(f,s));
+    const prevX=x,prevZ=z;
     const nx=x+(-Math.sin(yaw)*f+Math.cos(yaw)*s)*speed;
     const nz=z+(-Math.cos(yaw)*f-Math.sin(yaw)*s)*speed;
     if(valid(nx,z))x=nx;
@@ -1910,8 +1929,29 @@ async function start(){
     if(opened)door.rotation.y=Math.min(1.61,door.rotation.y+dt*1.9);
     gate.hidden=burgInnen||opened||z>14.3||Math.abs(x)>1.25;
     eye=THREE.MathUtils.lerp(eye,ground(x,z)+1.65,1-Math.exp(-dt*14));
-    camera.position.set(x,eye,z);
-    camera.rotation.set(pitch,yaw,0,'YXZ');
+    const vx=x-prevX,vz=z-prevZ;
+    const bewegung=Math.hypot(vx,vz);
+    if(bewegung>.0001)blickrichtung=Math.atan2(-vx,-vz);
+    figur.root.position.set(x,eye-1.65,z);
+    figur.root.rotation.y=blickrichtung;
+    figur.animate(dt,dt>0?bewegung/dt:0);
+    const rückX=Math.sin(yaw),rückZ=Math.cos(yaw);
+    let freierAbstand=0;
+    if(drittePerson){
+      for(let offset=.16;offset<=3.52;offset+=.16){
+        if(!valid(x+rückX*offset,z+rückZ*offset))break;
+        freierAbstand=offset;
+      }
+    }
+    kameradistanz=Math.min(freierAbstand,THREE.MathUtils.lerp(kameradistanz,freierAbstand,1-Math.exp(-dt*12)));
+    figur.root.visible=drittePerson&&kameradistanz>.72;
+    if(figur.root.visible){
+      camera.position.set(x+rückX*kameradistanz,eye+kameradistanz*.23,z+rückZ*kameradistanz);
+      camera.rotation.set(THREE.MathUtils.clamp(pitch*.67-.20,-.92,.57),yaw,0,'YXZ');
+    }else{
+      camera.position.set(x,eye,z);
+      camera.rotation.set(pitch,yaw,0,'YXZ');
+    }
     burgAktion.hidden=!amBurgtor();
     castleView.hidden=burgInnen||!burgAktion.hidden;
     burgAktion.textContent=burgInnen?'Zum Weißen Haus zurück':'Burgtor betreten';

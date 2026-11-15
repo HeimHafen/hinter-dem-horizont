@@ -16,7 +16,7 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=3';
+import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=4';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
 const place=document.querySelector('#place'), gate=document.querySelector('#gate');
 try { await start(); } catch(error) {
@@ -1710,7 +1710,11 @@ async function start(){
   castleView.hidden=false;
   const sunOutside=sun.position.clone();
   function setBurgLicht(inside){
-    sun.target.position.set(inside?hofX:0,0,inside?23:36);
+    sun.target.position.set(inside?hofX:0,0,inside?26:36);
+    Object.assign(sun.shadow.camera,inside
+      ? {left:-24,right:24,top:35,bottom:-35}
+      : {left:-53,right:53,top:62,bottom:-62});
+    sun.shadow.camera.updateProjectionMatrix();
     sun.position.copy(sunOutside);
     if(inside){sun.position.x+=hofX;sun.position.z-=13;}
   }

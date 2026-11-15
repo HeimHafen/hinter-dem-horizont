@@ -1,4 +1,4 @@
-import {burgMaterialien} from './burg-materialien.js?v=1';
+import {burgMaterialien} from './burg-materialien.js?v=2';
 import {burgFuss} from './burg-hohenzollern.js';
 
 export const tor = burgFuss - 1.5;
@@ -61,7 +61,7 @@ export function baueBurgRundgang(THREE,scene) {
   scene.add(group);
   const mat=burgMaterialien(THREE);
   const iron=new THREE.MeshStandardMaterial({color:0x37322c,roughness:.52,metalness:.52});
-  const stone=[0xa69b86,0xb8ab95,0xb3a891,0x988e7d,0xc2b59f].map(mat);
+  const stone=[0xa99e8b,0xb5a78e,0xaa9b85,0x8d8578,0xc0b29a].map(mat);
   const mortar=mat(0x62594e), oak=mat(0x654631,'oak'), slate=mat(0x39444d);
   const brass=mat(0xbb904c), banner=mat(0x34456d,'cloth');
   const glow=new THREE.MeshStandardMaterial({color:0xffb55c,emissive:0xf58b28,emissiveIntensity:1.2});
@@ -191,6 +191,31 @@ export function baueBurgRundgang(THREE,scene) {
     block(x,.85,26,3.8,.18,1.35,oak);
     for(const dx of [-1.55,1.55]) block(x+dx,.4,26,.2,.8,1.1,oak);
   }
+  // Exposed roof framing and warm, low chandeliers in the Great Hall.
+  for(const z of [22.6,25.9,29]){
+    block(0,5.71,z,18.3,.29,.34,oak);
+    for(const x of [-8.45,8.45]){
+      block(x,5.18,z,1.52,.19,.23,oak);
+      group.children.at(-1).rotation.z=Math.sign(x)*.57;
+    }
+    block(0,4.72,z,.034,1.68,.034,iron);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(.7,.024,6,20),iron);
+    ring.rotation.x=Math.PI/2;ring.position.set(0,3.91,z);
+    group.add(ring);
+    for(let k=0;k<8;k++){
+      const angle=k*Math.PI/4;
+      const x=.69*Math.cos(angle),d=z+.69*Math.sin(angle);
+      block(x,4.01,d,.065,.21,.065,brass);
+      block(x,4.14,d,.036,.065,.036,glow);
+    }
+  }
+  for(const x of [-9.06,9.06]){
+    for(const z of [22.2,25.4,28.9]){
+      block(x,.22,z,.48,.41,.65,stone[3]);
+      block(x,2.93,z,.28,5.02,.35,stone[4]);
+      block(x,5.37,z,.5,.23,.61,stone[1]);
+    }
+  }
   const basin=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.2,.95,12),stone[3]);
   basin.position.set(-4.1,.475,10);group.add(basin);
   const water=new THREE.Mesh(new THREE.CylinderGeometry(.86,.86,.035,12),mat(0x42696b));
@@ -297,9 +322,14 @@ export function baueBurgRundgang(THREE,scene) {
   hills.add(valley);
   scene.add(hills);
 
-  const courtLight=new THREE.PointLight(0xffd8a3,65,26,2);
+  const courtLight=new THREE.PointLight(0xffce92,49,17,2);
   courtLight.position.set(hofX,4.6,25);
   scene.add(courtLight);
+  for(const z of [22.6,29]){
+    const light=new THREE.PointLight(0xffbc76,23,9,2);
+    light.position.set(hofX,3.87,z);
+    scene.add(light);
+  }
   for(const {x,start} of raeume){
     const light=new THREE.PointLight(0xffcb87,14,6,2);
     light.position.set(hofX+x*7.6,2.5,start+.7);

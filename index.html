@@ -18,7 +18,7 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <script type="module">
 import * as THREE from 'three';
 import {baueSpielfigur} from './spielfigur.js?v=2';
-import {baueCrossHallPremium} from './cross-hall-premium.js?v=1';
+import {baueCrossHallReferenz} from './cross-hall-referenz.js?v=2';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=5';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
@@ -702,7 +702,10 @@ async function start(){
   surface(0,.9,4.1,32,.014,1.72,runner);
 
   surface(0,4.73,0,36,.12,16,plaster);
-  partition(-18,0,.24,16,plaster);
+  // Reference-image vista: split the western end wall, keeping the historic-style portal visually open.
+  partition(-18,-2.66,.24,10.68,plaster);
+  partition(-18,6.62,.24,2.76,plaster);
+  surface(-18,4.24,3.96,.24,.90,2.56,plaster);
   partition(18,0,.24,16,plaster);
   partition(0,-8,36,.24,plaster);
   // Wide opening to the Entrance Hall: replaces the fictional almost-solid wall.
@@ -1528,7 +1531,7 @@ async function start(){
     scene.add(chandelier);
   }
   // Historical Cross Hall treatment is now isolated in its own JS module.
-  baueCrossHallPremium(THREE,scene,exterior,renderer,obstacles);
+  baueCrossHallReferenz(THREE,scene,exterior,renderer,obstacles);
 
   function resoluteDesk(x,z){
     const desk=new THREE.Group();
@@ -2001,7 +2004,7 @@ async function start(){
   }
   let x=0,z=innerWidth<innerHeight?52:42,yaw=0,pitch=.08,look=null,opened=false;
   // Optional direct preview URL: index.html#cross-hall (default game start unchanged).
-  if(location.hash==='#cross-hall'){x=12.1;z=3.97;yaw=Math.PI/2;pitch=.04;opened=true;}
+  if(location.hash==='#cross-hall'){x=14.1;z=3.97;yaw=Math.PI/2;pitch=.045;opened=true;}
   let previousX=0,previousY=0;
   const castleView=document.querySelector('#castle-view');
   castleView.hidden=false;
@@ -2064,7 +2067,9 @@ async function start(){
   }
   const figur=baueSpielfigur(THREE,scene);
   const ansicht=document.querySelector('#ansicht');
-  let drittePerson=true;
+  // The approved reference is first person; other game entry points retain their previous perspective.
+  let drittePerson=location.hash!=='#cross-hall';
+  ansicht.textContent=drittePerson?'Egoansicht':'Figur zeigen';
   ansicht.hidden=false;
   function wechsleAnsicht(){
     drittePerson=!drittePerson;

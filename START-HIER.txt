@@ -1,29 +1,39 @@
-HINTER DEM HORIZONT · WEISSES HAUS & BURG HOHENZOLLERN
+HINTER DEM HORIZONT – CROSS HALL REFERENZ V2
+15.11.2026 | Für GitHub Pages / Safari iPhone
 
-ZIP entpacken und die Dateien des Ordners gemeinsam auf deinen Webserver legen.
-index.html über die Webadresse öffnen. Auf „Zur Burg schauen“ tippen.
-Auf dem Handy mit den Pfeiltasten laufen und über die Szene streichen.
-Am Rechner per WASD oder Pfeiltasten laufen und mit der Maus ziehen.
+ZIEL
+Die vom Nutzer freigegebene Abbildung dient als verbindliches visuelles ZIEL:
+cremefarbener klassischer Flur, symmetrische Perspektive, polierter zweifarbiger Marmorboden,
+roter Ornamentteppich, zwei Kristallleuchter, Säulen/Gesimse, Porträts, historische Möbel.
+Dies ist eine spielbare, dreidimensionale ANNÄHERUNG, KEIN 1:1-Fotorealismus und KEINE
+vermessene, wissenschaftlich vollständige Rekonstruktion des Weißen Hauses.
 
-Lokal kannst du im entpackten Ordner python3 -m http.server 8000 ausführen
-und http://localhost:8000 öffnen. Die Seite verwendet Three.js über jsDelivr.
+SICHERE AKTUALISIERUNG (Testbranch empfohlen)
+1. Sicherung der aktuellen Spielversion anlegen; bestehende Dateien nicht löschen.
+2. Komplettes Paket ODER die Update-4-Dateien hochladen.
+3. Beim gezielten Update genau diese Pfade nutzen:
+   index.html                                  [bestehende Datei ersetzen]
+   cross-hall-referenz.js                      [neu hinzufügen]
+   assets/crosshall/portrait_links.jpg        [neu hinzufügen]
+   assets/crosshall/portrait_rechts.jpg       [neu hinzufügen]
+4. Die alte cross-hall-premium.js darf bestehen bleiben. Sie ist ab V2 unbenutzt.
+5. Bilder müssen exakt in assets/crosshall/ liegen (Schreibweise beachten).
+6. Die Burg, das Weiße-Haus-Modell, die Figur und die übrigen Spiel-Dateien bleiben unverändert.
+7. Test mit kompletter HTTPS-GitHub-Pages-Adresse + #cross-hall direkt in der Cross Hall starten.
+8. Nach GitHub-Pages-Deployment in Safari gegebenenfalls einmal neu laden, um den Cache zu umgehen.
 
-Am Aussichtspunkt geradeaus zum steinernen Tor gehen. Sobald die Schaltfläche
-„Burgtor betreten“ erscheint, antippen oder E drücken. Du landest im begehbaren
-Innenhof. Links liegen Wachstube und Kapelle, rechts Küche und Archiv.
-Geradeaus durch den großen Bogen erreichst du die Halle. Durch den hinteren
-Hallenbogen geht es zu Fuß über die Treppe zum Wehrgang und zum Aussichtsturm.
-Für den Rückweg folgst du der Treppe hinab und gehst zurück zum Eingangstor.
-Dort tippst du auf „Zum Weißen Haus zurück“ oder drückst E.
+WORKING COPY / GITHUB
+Commit-Zusammenfassung: Cross Hall V2 – Referenzbildgetreuer 3D-Ausbau und Mobiloptimierung
+Detaillierte Informationen: Neoklassizistische Wand- und Deckendetails; Marmorboden;
+Ornamentläufer; zwei mehrteilige Kristallleuchter; sechs Säulen; historische Möbel und
+Porträt-Texturen aus freigegebener Vorlage; Westportal als räumliche Tiefenansicht;
+überarbeitetes Ego-Teststartbild; Instancing für die GPU. Spielfigur, Burg und Grundwelt erhalten.
+Vorgeschlagene neue Remote-Referenz: refs/heads/test/cross-hall-referenz-v2
+Force Push: AUS.
 
-Die 50 Blöcke reichen von der Haustür bis zum Beginn des gescannten Berghangs.
-Der Scan ist das Außenmodell. Das Portal am Bergfuß führt in einen separat
-modellierten, frei gestalteten Burgbereich mit Hof, Seitenräumen, Halle und Aussichtsturm.
-
-QUELLE / CREDITS
-„Burg Hohenzollern“ von LAD BW.
-Fotos: Christoph Steffen. © 2018 Landesamt für Denkmalpflege im
-Regierungspräsidium Stuttgart.
-Quelle: https://sketchfab.com/3d-models/burg-hohenzollern-a88eda1be5cc4e58a4268fce708b1a72
-Lizenz: Creative Commons Attribution-NonCommercial (CC BY-NC), siehe Modellseite.
-Umsetzung: GLB für den Upload komprimiert. In der Spielwelt skaliert, gedreht und positioniert.
+WICHTIG ZUR QUALITÄT
+Die JS-Syntax und die Erstellung der 3D-Primitiven wurden automatisiert geprüft;
+183 Renderobjekte im neuen Modul, 15 zusätzliche Hindernisdefinitionen und 2 Leuchtpunkte.
+Eine echte visuelle iPhone-Safari-Prüfung und ein vollständiger Gameplay-/FPS-Test waren
+in dieser Umgebung nicht möglich. Das Ergebnis ist daher zunächst ein Teststand, nicht
+als fehlerfrei oder pixelgenau bestätigt. Das freigegebene Foto ist keine 3D-Bauzeichnung.

@@ -1,3 +1,4 @@
+import {burgMaterialien} from './burg-materialien.js?v=1';
 import {burgFuss} from './burg-hohenzollern.js';
 
 export const tor = burgFuss - 1.5;
@@ -58,10 +59,11 @@ export function imHof(x,z) {
 export function baueBurgRundgang(THREE,scene) {
   const group=new THREE.Group();
   scene.add(group);
-  const mat=(color)=>new THREE.MeshStandardMaterial({color,roughness:.92});
+  const mat=burgMaterialien(THREE);
+  const iron=new THREE.MeshStandardMaterial({color:0x37322c,roughness:.52,metalness:.52});
   const stone=[0xa69b86,0xb8ab95,0xb3a891,0x988e7d,0xc2b59f].map(mat);
-  const mortar=mat(0x62594e), oak=mat(0x5b3928), slate=mat(0x39444d);
-  const brass=mat(0xbb904c), banner=mat(0x293b58);
+  const mortar=mat(0x62594e), oak=mat(0x654631,'oak'), slate=mat(0x39444d);
+  const brass=mat(0xbb904c), banner=mat(0x34456d,'cloth');
   const glow=new THREE.MeshStandardMaterial({color:0xffb55c,emissive:0xf58b28,emissiveIntensity:1.2});
   const cube=new THREE.BoxGeometry(1,1,1);
   function block(x,y,z,w,h,d,m) {
@@ -83,22 +85,37 @@ export function baueBurgRundgang(THREE,scene) {
         block(x+(side?0:t),(r+.5)*rowHeight,z+(side?t:0),
           side?w+.055:right-left-.035,rowHeight-.033,side?right-left-.035:d+.055,
           stone[(r*7+i*3+(x>0?2:0))%stone.length]);
+        const brick=group.children.at(-1);
+        brick.position.y+=Math.sin(i*4.66+r*6.18)*.014;
+        brick.rotation.y=Math.sin(i*11.8+r*3.09)*.013;
       }
     }
   }
   function arch(x,z,bottom,r) {
-    for(let i=0;i<=12;i++){
-      const angle=i*Math.PI/12;
-      const m=new THREE.Mesh(cube,stone[i%5]);
-      m.position.set(x+Math.cos(angle)*r,bottom+Math.sin(angle)*r,z);
-      m.rotation.z=angle;m.scale.set(.48,.36,.83);
-      group.add(m);
+    const pieces=17;
+    for(let i=0;i<pieces;i++){
+      const shape=new THREE.Shape();
+      const low=i*Math.PI/pieces+.004, high=(i+1)*Math.PI/pieces-.004;
+      shape.moveTo(Math.cos(low)*r,Math.sin(low)*r);
+      shape.absarc(0,0,r,low,high,false);
+      shape.lineTo(Math.cos(high)*(r+.45),Math.sin(high)*(r+.45));
+      shape.absarc(0,0,r+.45,high,low,true);
+      shape.closePath();
+      const geometry=new THREE.ExtrudeGeometry(shape,{depth:.79,bevelEnabled:true,bevelThickness:.018,bevelSize:.016,bevelSegments:1,steps:1,curveSegments:5});
+      geometry.translate(x,bottom,z-.4);
+      const piece=new THREE.Mesh(geometry,stone[(i+1)%5]);
+      piece.castShadow=piece.receiveShadow=true;
+      group.add(piece);
     }
   }
   function lamp(x,z,y=2.55) {
-    block(x,y-.25,z,.29,.12,.25,oak);
-    block(x,y,z,.21,.4,.21,glow);
-    block(x,y+.25,z,.32,.14,.30,oak);
+    block(x,y-.23,z,.26,.075,.25,iron);
+    block(x,y,z,.17,.32,.17,glow);
+    for(const dx of [-.101,.101])for(const dz of [-.101,.101])
+      block(x+dx,y,z+dz,.024,.42,.024,iron);
+    block(x,y+.225,z,.29,.065,.29,iron);
+    block(x,y+.29,z,.19,.08,.19,iron);
+    block(x,y+.37,z,.047,.12,.047,iron);
   }
   function flag(x,z,y) {
     block(x,y,z,1.25,2.35,.08,banner);
@@ -120,7 +137,8 @@ export function baueBurgRundgang(THREE,scene) {
   for(let row=0;row<31;row++){
     for(let column=0;column<19;column++){
       const x=(column-9)*1.03+(row%2?.19:0);
-      block(x,-.035,row+ .35,1,.075,.96,stone[(row*13+column*7)%5]);
+      block(x,-.038,row+.35,1,.079,.965,stone[(row*13+column*7)%5]);
+      group.children.at(-1).rotation.y=Math.sin(column*3.38+row*9.7)*.025;
     }
   }
   for(const x of [-10,10]){
@@ -143,6 +161,32 @@ export function baueBurgRundgang(THREE,scene) {
   block(0,5.28,saalEnde,3.5,1.65,.8,stone[2]);
   for(const x of [-2.2,2.2])lamp(x,saalEnde-.5);
   block(0,6.14,26,20.6,.3,10.8,slate);
+  // Pitched roof and recessed Gothic ornament visible from the court.
+  const gable=new THREE.Shape();
+  gable.moveTo(-10.3,0);gable.lineTo(10.3,0);gable.lineTo(0,4.55);gable.closePath();
+  for(const z of [saalFront+.05,saalEnde-.27]){
+    const mesh=new THREE.Mesh(new THREE.ExtrudeGeometry(gable,{depth:.42,bevelEnabled:false}),stone[2]);
+    mesh.position.set(0,6.18,z);mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);
+  }
+  for(const side of [-1,1]){
+    block(side*5.22,8.49,26,11.67,.19,11.14,slate);
+    group.children.at(-1).rotation.z=-side*.415;
+    for(let i=0;i<16;i++){
+      const x=side*(.35+i*.65);
+      block(x,10.85-Math.abs(x)*.442,26,.18,.12,11.18,slate);
+      group.children.at(-1).rotation.z=-side*.415;
+    }
+  }
+  for(const x of [-8.5,-4.6,4.6,8.5]){
+    block(x,3.56,saalFront-.52,.41,4.6,.48,stone[4]);
+    block(x,.89,saalFront-.58,.62,.23,.65,stone[2]);
+    block(x,5.85,saalFront-.56,.64,.27,.64,stone[1]);
+  }
+  for(const x of [-2.9,0,2.9]){
+    block(x,7.18+(x===0?.6:0),saalFront-.018,.76,1.37,.12,iron);
+    arch(x,saalFront+.01,7.77+(x===0?.6:0),.35);
+    block(x,7.18+(x===0?.6:0),saalFront-.13,.045,1.35,.07,brass);
+  }
   for(const x of [-5,5]){
     block(x,.85,26,3.8,.18,1.35,oak);
     for(const dx of [-1.55,1.55]) block(x+dx,.4,26,.2,.8,1.1,oak);
@@ -189,7 +233,10 @@ export function baueBurgRundgang(THREE,scene) {
     const z=treppenStart+(i+.5)*.5;
     const h=(i+1)*hoehe/stufen;
     block(0,h/2-.01,z,3.65,h+.02,.5,stone[i%5]);
-    for(const x of [-1.85,1.85])block(x,h+.38,z,.29,.76,.50,stone[3]);
+    for(const x of [-1.85,1.85]){
+      block(x,h+.39,z,.34,.78,.5,stone[(i+1)%5]);
+      block(x,h+.8,z,.43,.11,.51,stone[4]);
+    }
     if(i%8===2)lamp(-1.85,z,h+1);
   }
   block(0,hoehe-.18,51,3.65,.36,4.4,stone[2]);
@@ -200,6 +247,11 @@ export function baueBurgRundgang(THREE,scene) {
     for(let z=53.3;z<59;z+=1)block(x,hoehe+1.25,z,.48,.49,.48,stone[4]);
   }
   block(0,hoehe+.51,59,7,1.02,.46,stone[3]);
+  for(let row=0;row<3;row++)for(let col=0;col<11;col++){
+    block((col-5)*.61,.18+hoehe+row*.32,58.75,.58,.30,.11,stone[(row*3+col)%5]);
+  }
+  block(0,hoehe+1.04,59,7.05,.16,.6,stone[4]);
+  for(const x of [-3.36,3.36])block(x,hoehe+1.06,56,.48,.15,6.03,stone[4]);
   for(const x of [-2.45,2.45]){
     block(x,hoehe+1.63,53,.72,3.25,.8,stone[1]);
     block(x,hoehe+1.63,58.7,.72,3.25,.8,stone[1]);
@@ -220,6 +272,7 @@ export function baueBurgRundgang(THREE,scene) {
   for(const [material,matrices] of batches){
     const blocks=new THREE.InstancedMesh(cube,material,matrices.length);
     matrices.forEach((matrix,index)=>blocks.setMatrixAt(index,matrix));
+    blocks.castShadow=blocks.receiveShadow=true;
     blocks.computeBoundingSphere();
     group.add(blocks);
   }

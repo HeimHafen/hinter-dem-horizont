@@ -10,13 +10,13 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <header><h1>Hinter dem Horizont</h1><div id="place">Weißes Haus wird geladen …</div></header>
 <div id="controls" hidden style="display:none"><span></span><button data-key="w" aria-label="Vorwärts">↑</button><span></span><button data-key="a" aria-label="Links">←</button><button data-key="s" aria-label="Zurück">↓</button><button data-key="d" aria-label="Rechts">→</button></div>
 <button id="castle-view" style="position:fixed;right:16px;bottom:90px;padding:0 12px;max-width:calc(100% - 32px)" hidden>Zur Burg schauen</button>
-<button id="burg-aktion" type="button" hidden style="position:fixed;right:16px;bottom:max(22px,env(safe-area-inset-bottom));padding:0 14px">Burgtor betreten</button>
+<button id="burg-aktion" type="button" hidden style="position:fixed;right:16px;bottom:calc(88px + env(safe-area-inset-bottom));padding:0 12px;max-width:calc(100% - 32px)">Burgtor betreten</button>
 <button id="gate" hidden>Tür öffnen</button>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=2';
+import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=3';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
 const place=document.querySelector('#place'), gate=document.querySelector('#gate');
 try { await start(); } catch(error) {
@@ -107,7 +107,8 @@ async function start(){
   sun.castShadow=true;
   sun.shadow.mapSize.set(2048,2048);
   Object.assign(sun.shadow.camera,{left:-53,right:53,top:62,bottom:-62,near:1,far:175});
-  sun.shadow.normalBias=.035;
+  sun.shadow.normalBias=.031;
+  sun.shadow.bias=-.00012;
   model.traverse(o=>{
     if(!o.isMesh)return;
     o.receiveShadow=true;
@@ -1707,13 +1708,20 @@ async function start(){
   let previousX=0,previousY=0;
   const castleView=document.querySelector('#castle-view');
   castleView.hidden=false;
-  castleView.onclick=()=>{burgInnen=false;x=0;z=aussicht;yaw=Math.PI;pitch=.12;};
+  const sunOutside=sun.position.clone();
+  function setBurgLicht(inside){
+    sun.target.position.set(inside?hofX:0,0,inside?23:36);
+    sun.position.copy(sunOutside);
+    if(inside){sun.position.x+=hofX;sun.position.z-=13;}
+  }
+  castleView.onclick=()=>{setBurgLicht(false);burgInnen=false;x=0;z=aussicht;yaw=Math.PI;pitch=.12;};
   function amBurgtor(){
     return burgInnen ? Math.abs(x-hofX)<1.15&&z<3.55 : Math.abs(x)<1.15&&Math.abs(z-tor)<2.05;
   }
   burgAktion.onclick=()=>{
     if(!amBurgtor())return;
     burgInnen=!burgInnen;
+    setBurgLicht(burgInnen);
     x=burgInnen?hofX:0;
     z=burgInnen?hofStart:tor-2.45;
     yaw=burgInnen?Math.PI:0;
@@ -1768,6 +1776,7 @@ async function start(){
     camera.position.set(x,eye,z);
     camera.rotation.set(pitch,yaw,0,'YXZ');
     burgAktion.hidden=!amBurgtor();
+    castleView.hidden=burgInnen||!burgAktion.hidden;
     burgAktion.textContent=burgInnen?'Zum Weißen Haus zurück':'Burgtor betreten';
     const position=burgInnen?'Burg Hohenzollern · '+burgOrt(x,z):z>=tor-3?'Burgtor · E oder antippen':z>=aussicht-2?'Aussicht · Burg Hohenzollern':z>=32?'Weg zur Burg Hohenzollern':z<-.35?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Cross Hall':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
     if(place.textContent!==position)place.textContent=position;

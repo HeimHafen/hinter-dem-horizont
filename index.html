@@ -153,18 +153,15 @@ async function start(){
       surface(x,y+h*.5+.13,12.31,2.26,.14,.4,stone);
     }
   }
-  // The portico roof meets a blind wall above the central second-floor bays.
+  // GLTFLoader strips the dot from names such as Cube.240.
+  const coveredAtticPieces = new Set([509,511,513]);
   for(const first of [240,258,285]){
-    for(let index=first;index<first+9;index++){
-      const name='Cube.'+String(index).padStart(3,'0');
-      const piece=model.getObjectByName(name);
-      if(piece)piece.visible=false;
-    }
+    for(let index=first;index<first+9;index++)coveredAtticPieces.add(index);
   }
-  for(const name of ['Cube.509','Cube.511','Cube.513']){
-    const piece=model.getObjectByName(name);
-    if(piece)piece.visible=false;
-  }
+  model.traverse(piece=>{
+    const match=/^Cube\.?(\d+)$/.exec(piece.name);
+    if(piece.isMesh&&match&&coveredAtticPieces.has(Number(match[1])))piece.visible=false;
+  });
   const reflectionCanvas=document.createElement('canvas');
   reflectionCanvas.width=256;
   reflectionCanvas.height=128;

@@ -15,7 +15,7 @@ export async function ladeBurg(THREE, loader, scene) {
   scene.add(burg);
 
   const wegbeginn = 35;
-  const weglaenge = aussicht + 1 - wegbeginn;
+  const weglaenge = burgFuss - 1.5 - wegbeginn;
   const weg = new THREE.Mesh(
     new THREE.PlaneGeometry(3.8, weglaenge),
     new THREE.MeshStandardMaterial({color: 0x9d8a6f, roughness: 1})

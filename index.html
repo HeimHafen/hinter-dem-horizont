@@ -10,11 +10,13 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <header><h1>Hinter dem Horizont</h1><div id="place">Weißes Haus wird geladen …</div></header>
 <div id="controls" hidden style="display:none"><span></span><button data-key="w" aria-label="Vorwärts">↑</button><span></span><button data-key="a" aria-label="Links">←</button><button data-key="s" aria-label="Zurück">↓</button><button data-key="d" aria-label="Rechts">→</button></div>
 <button id="castle-view" style="position:fixed;right:16px;bottom:90px;padding:0 12px;max-width:calc(100% - 32px)" hidden>Zur Burg schauen</button>
+<button id="burg-aktion" type="button" hidden style="position:fixed;right:16px;bottom:max(22px,env(safe-area-inset-bottom));padding:0 14px">Burgtor betreten</button>
 <button id="gate" hidden>Tür öffnen</button>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {tor,hofX,hofStart,saalFront,imHof,baueBurgRundgang} from './burg-rundgang.js';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
 const place=document.querySelector('#place'), gate=document.querySelector('#gate');
 try { await start(); } catch(error) {
@@ -37,6 +39,7 @@ async function start(){
   const {scene:model}=await new GLTFLoader().loadAsync('./Weisses-Haus-Innen.glb');
   scene.add(model);
   await ladeBurg(THREE,new GLTFLoader(),scene);
+  baueBurgRundgang(THREE,scene);
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   sun.target.position.z=36;
@@ -1688,8 +1691,10 @@ async function start(){
   }
   resoluteDesk(0,-5.22);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);
+  let burgInnen=false;
+  const burgAktion=document.querySelector('#burg-aktion');
   const keys=new Set(),touchKeys=new Map();
-  addEventListener('keydown',event=>{keys.add(event.key.toLowerCase());if(event.key.toLowerCase()==='e'&&!event.repeat&&!gate.hidden)gate.click();});
+  addEventListener('keydown',event=>{keys.add(event.key.toLowerCase());if(event.key.toLowerCase()==='e'&&!event.repeat){if(!burgAktion.hidden)burgAktion.click();else if(!gate.hidden)gate.click();}});
   addEventListener('keyup',event=>keys.delete(event.key.toLowerCase()));
   addEventListener('blur',()=>{keys.clear();touchKeys.clear();});
   const controls=document.querySelector('#controls');
@@ -1702,7 +1707,19 @@ async function start(){
   let previousX=0,previousY=0;
   const castleView=document.querySelector('#castle-view');
   castleView.hidden=false;
-  castleView.onclick=()=>{x=0;z=aussicht;yaw=Math.PI;pitch=.26;};
+  castleView.onclick=()=>{burgInnen=false;x=0;z=aussicht;yaw=Math.PI;pitch=.12;};
+  function amBurgtor(){
+    return burgInnen ? Math.abs(x-hofX)<1.15&&z<3.55 : Math.abs(x)<1.15&&Math.abs(z-tor)<2.05;
+  }
+  burgAktion.onclick=()=>{
+    if(!amBurgtor())return;
+    burgInnen=!burgInnen;
+    x=burgInnen?hofX:0;
+    z=burgInnen?hofStart:tor-2.45;
+    yaw=burgInnen?Math.PI:0;
+    pitch=0;
+    keys.clear();touchKeys.clear();
+  };
   const canvas=renderer.domElement;
   canvas.onpointerdown=e=>{
     if(look!==null)return;
@@ -1718,6 +1735,8 @@ async function start(){
   gate.onclick=()=>{opened=true;gate.hidden=true;};
   const pressed=(...names)=>names.some(key=>keys.has(key)||[...touchKeys.values()].includes(key));
   function valid(px,pz){
+    if(burgInnen)return imHof(px,pz);
+    if(pz>tor-1&&Math.abs(Math.abs(px)-2.45)<1.15)return false;
     if(Math.abs(px)>31||pz>burgFuss-.4||pz< -7.8)return false;
     if(pz>=7.96&&pz<12.43&&(Math.abs(px)>1.23||door.rotation.y<1.45))return false;
     if(pz<8&&Math.abs(px)>17.8)return false;
@@ -1727,6 +1746,7 @@ async function start(){
     return bounds.every(([cx,cz])=>Math.hypot(px-cx,pz-cz)>.98);
   }
   function ground(px,pz){
+    if(burgInnen)return .03;
     if(pz<12.04)return .89;
     if(Math.abs(px)>8.5||pz>20.55)return .03;
     if(pz<19.31)return .86;
@@ -1743,11 +1763,14 @@ async function start(){
     if(valid(nx,z))x=nx;
     if(valid(x,nz))z=nz;
     if(opened)door.rotation.y=Math.min(1.61,door.rotation.y+dt*1.9);
-    gate.hidden=opened||z>14.3||Math.abs(x)>1.25;
+    gate.hidden=burgInnen||opened||z>14.3||Math.abs(x)>1.25;
     eye=THREE.MathUtils.lerp(eye,ground(x,z)+1.65,1-Math.exp(-dt*14));
     camera.position.set(x,eye,z);
     camera.rotation.set(pitch,yaw,0,'YXZ');
-    place.textContent=z>=aussicht-2?'Aussicht · Burg Hohenzollern':z>=32?'Weg zur Burg Hohenzollern':z<-.35?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Cross Hall':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
+    burgAktion.hidden=!amBurgtor();
+    burgAktion.textContent=burgInnen?'Zum Weißen Haus zurück':'Burgtor betreten';
+    const position=burgInnen?(z>saalFront?'Burg Hohenzollern · Halle':'Burg Hohenzollern · Innenhof'):z>=tor-3?'Burgtor · E oder antippen':z>=aussicht-2?'Aussicht · Burg Hohenzollern':z>=32?'Weg zur Burg Hohenzollern':z<-.35?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Cross Hall':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
+    if(place.textContent!==position)place.textContent=position;
     sky.position.copy(camera.position);
     sky.material.uniforms.drift.value+=dt*.022;
     renderer.render(scene,camera);

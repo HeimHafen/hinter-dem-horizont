@@ -8,9 +8,14 @@ Am Rechner per WASD oder Pfeiltasten laufen und mit der Maus ziehen.
 Lokal kannst du im entpackten Ordner python3 -m http.server 8000 ausführen
 und http://localhost:8000 öffnen. Die Seite verwendet Three.js über jsDelivr.
 
-Die 50 Blöcke reichen von der Haustür bis zum Beginn des gescannten Berghangs
-auf der Burgseite. Die Burg selbst sitzt weiter oben im Scan. Der Weg führt
-zu einem Aussichtspunkt. Der Scan ist als Außenkulisse eingebunden.
+Am Aussichtspunkt geradeaus zum steinernen Tor gehen. Sobald die Schaltfläche
+„Burgtor betreten“ erscheint, antippen oder E drücken. Du landest im begehbaren
+Innenhof. Geradeaus durch den zweiten Bogen erreichst du die Halle. Zurück geht
+es über dasselbe Eingangstor mit „Zum Weißen Haus zurück“.
+
+Die 50 Blöcke reichen von der Haustür bis zum Beginn des gescannten Berghangs.
+Der Scan ist das Außenmodell. Das Portal am Bergfuß führt in einen separat
+modellierten, frei gestalteten Hof mit Halle.
 
 QUELLE / CREDITS
 „Burg Hohenzollern“ von LAD BW.
@@ -18,4 +23,4 @@ Fotos: Christoph Steffen. © 2018 Landesamt für Denkmalpflege im
 Regierungspräsidium Stuttgart.
 Quelle: https://sketchfab.com/3d-models/burg-hohenzollern-a88eda1be5cc4e58a4268fce708b1a72
 Lizenz: Creative Commons Attribution-NonCommercial (CC BY-NC), siehe Modellseite.
-Umsetzung: Original-GLB in der Spielwelt skaliert, gedreht und positioniert.
+Umsetzung: GLB für den Upload komprimiert. In der Spielwelt skaliert, gedreht und positioniert.

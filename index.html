@@ -148,10 +148,22 @@ async function start(){
   }
   for(let x=-20;x<=20;x+=5){
     for(const [y,h] of [[2.75,2.85],[7.8,2.75],[11.92,1.85]]){
-      if(x===0&&y<3)continue;
+      if((x===0&&y<3)||(y>11&&Math.abs(x)<=5))continue;
       for(const side of [-1,1])surface(x+side*.97,y,12.24,.13,h+.25,.23,stone);
       surface(x,y+h*.5+.13,12.31,2.26,.14,.4,stone);
     }
+  }
+  // The portico roof meets a blind wall above the central second-floor bays.
+  for(const first of [240,258,285]){
+    for(let index=first;index<first+9;index++){
+      const name='Cube.'+String(index).padStart(3,'0');
+      const piece=model.getObjectByName(name);
+      if(piece)piece.visible=false;
+    }
+  }
+  for(const name of ['Cube.509','Cube.511','Cube.513']){
+    const piece=model.getObjectByName(name);
+    if(piece)piece.visible=false;
   }
   const reflectionCanvas=document.createElement('canvas');
   reflectionCanvas.width=256;
@@ -183,7 +195,7 @@ async function start(){
   const paintedSash=new THREE.MeshStandardMaterial({color:0xece4d6,roughness:.55});
   for(const [y,h,d] of [[.94,.17,.23],[4.57,.12,.24],[5.02,.20,.35],
     [9.46,.12,.23],[13.17,.16,.35],[13.69,.22,.47],[14.1,.16,.48]]){
-    if(y<4.2){
+    if(y<5.2){
       for(const side of [-1,1])surface(side*12.50,y,12.18,21.7,h,d,stone);
     }else surface(0,y,12.18,46.7,h,d,stone);
     for(const side of [-1,1])surface(side*23.55,y,0,d,h,24.35,stone);
@@ -204,7 +216,7 @@ async function start(){
     surface(x,13.53,12.28,.16,.21,.24,stone);
   }
   for(let x=-20;x<=20;x+=5)for(const [y,h] of [[2.75,2.85],[7.8,2.75],[11.92,1.85]]){
-    if(x===0&&y<3)continue;
+    if((x===0&&y<3)||(y>11&&Math.abs(x)<=5))continue;
     surface(x,y,12.251,1.76,h,.045,limestoneShadow);
     surface(x,y,12.281,1.58,h-.15,.034,glass);
     for(const offset of [-.78,-.26,.26,.78])
@@ -338,6 +350,48 @@ async function start(){
   }
   surface(0,4.02,12.21,3.46,.20,.33,stone);
   surface(0,4.16,12.27,3.64,.11,.44,stone);
+  // North entrance fanlight, modelled from the HABS exterior elevation.
+  const archBase=4.24,archZ=12.49,rx=1.52,ry=.86;
+  function archPoint(t,width,height){
+    return new THREE.Vector2(width*Math.cos(t),height*Math.sin(t));
+  }
+  const fan=new THREE.Shape();
+  fan.moveTo(rx,0);
+  for(let step=1;step<=48;step++){
+    const v=archPoint(Math.PI*step/48,rx,ry);
+    fan.lineTo(v.x,v.y);
+  }
+  fan.closePath();
+  const fanGlass=new THREE.Mesh(new THREE.ShapeGeometry(fan),glass);
+  fanGlass.position.set(0,archBase,archZ);
+  exterior.add(fanGlass);
+  function archMoulding(width,height,tube,material,z){
+    const points=Array.from({length:65},(_,i)=>{
+      const point=archPoint(Math.PI*i/64,width,height);
+      return new THREE.Vector3(point.x,archBase+point.y,z);
+    });
+    const mesh=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),64,tube,8,false),material);
+    mesh.castShadow=mesh.receiveShadow=true;
+    exterior.add(mesh);
+  }
+  archMoulding(1.63,.97,.086,stone,archZ);
+  archMoulding(1.51,.85,.031,paintedSash,archZ+.022);
+  archMoulding(1.03,.57,.019,paintedSash,archZ+.031);
+  for(let i=1;i<8;i++){
+    const point=archPoint(Math.PI*i/8,rx-.022,ry-.022);
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(.027,point.length(),.036),paintedSash);
+    bar.position.set(point.x/2,archBase+point.y/2,archZ+.032);
+    bar.rotation.z=-Math.atan2(point.x,point.y);
+    exterior.add(bar);
+  }
+  surface(0,archBase,archZ+.03,3.10,.066,.1,paintedSash);
+  surface(0,archBase+.035,archZ+.064,.21,.086,.038,paintedSash);
+  // Painted soffit, with shadow lines at its perimeter.
+  const soffit=new THREE.MeshStandardMaterial({color:0xe8e4da,roughness:.87});
+  grain(soffit,19,.043);
+  surface(0,11.402,15.43,16.84,.045,7.04,soffit);
+  for(const x of [-8.24,8.24])surface(x,11.351,15.43,.27,.09,7.02,stone);
+  for(const z of [12.04,18.82])surface(0,11.351,z,16.68,.09,.24,stone);
   const door=new THREE.Group();
   door.position.set(-1.5,.87,12.13);
   scene.add(door);

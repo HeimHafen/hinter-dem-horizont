@@ -4,7 +4,7 @@
  * This module places actual GLB geometry, not a photo-plane, decal or a box placeholder.
  * Existing doors, lighting, navigation and other scene assets are intentionally unchanged.
  */
-const ROOT = './assets/crosshall/models/';
+const MODEL_ROOTS = ['./assets/crosshall/models/', './'];
 
 export const HISTORIC_CONSOLES_V6 = Object.freeze([
   {id:'Westliche Mahagoni-Konsole',kind:'walnut',decor:'vase',x:-6.75,z:7.11,orientation:Math.PI},
@@ -24,12 +24,17 @@ export async function setzeHistorischeKonsolenV6(THREE, gltfLoader, root, obstac
   };
   const models = {};
   await Promise.all(Object.entries(filenames).map(async ([name,filename])=>{
-    try {
-      const gltf = await gltfLoader.loadAsync(ROOT + filename);
-      if (!gltf?.scene) throw new Error('No scene in '+filename);
-      models[name] = gltf.scene;
-    } catch(e) {
-      console.error('[Cross Hall V6] 3D asset could not be loaded:',filename,e);
+    for (const folder of MODEL_ROOTS) {
+      try {
+        const gltf = await gltfLoader.loadAsync(folder + filename);
+        if (!gltf?.scene) throw new Error('3D scene missing in '+filename);
+        models[name] = gltf.scene;
+        break;
+      } catch(e) {
+        if (folder === MODEL_ROOTS[MODEL_ROOTS.length - 1]) {
+          console.error('[Cross Hall V6.1] 3D model unavailable in either directory:', filename, e);
+        }
+      }
     }
   }));
   const display = new THREE.Group();
@@ -73,6 +78,14 @@ export async function setzeHistorischeKonsolenV6(THREE, gltfLoader, root, obstac
     obstacles.push({x:cfg.x,z:cfg.z,w:1.53,d:.68});
     placed.push(cfg.id);
   }
-  console.info(`[Cross Hall V6] ${placed.length}/5 volumetric console groups loaded from GLB.`);
+  if (placed.length !== HISTORIC_CONSOLES_V6.length) {
+    const warning=document.createElement('div');
+    warning.id='crosshall-asset-warning';
+    warning.setAttribute('role','status');
+    warning.style.cssText='position:fixed;top:47%;left:12px;right:12px;z-index:100;background:#372924;color:#fff9ef;border:1px solid #e3a66c;border-radius:10px;padding:12px;max-width:440px;margin:auto;font:14px/1.45 system-ui;pointer-events:none';
+    warning.textContent='Cross Hall: 3D-Möbel konnten nicht vollständig geladen werden ('+placed.length+'/5). Bitte Dateipfade und GitHub Pages prüfen.';
+    document.body.append(warning);
+  }
+  console.info(`[Cross Hall V6.1] ${placed.length}/5 echte GLB-Möbelgruppen geladen.`);
   return {group:display,placed};
 }

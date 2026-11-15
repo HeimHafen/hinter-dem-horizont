@@ -703,19 +703,23 @@ export async function ladeCrossHallAssetsV5(THREE, renderer) {
   const loader=new THREE.TextureLoader();
   const assets={};
   await Promise.all(Object.entries(definition).map(async ([key,file])=>{
-    try {
-      const map=await loader.loadAsync('./assets/crosshall/'+file);
-      map.colorSpace=/(Normal|Roughness)$/.test(key)?THREE.NoColorSpace:THREE.SRGBColorSpace;
-      map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-      if(key!=='portraitLeft'&&key!=='portraitRight'){
-        map.wrapS=THREE.RepeatWrapping;
-        map.wrapT=THREE.RepeatWrapping;
+    // GitHub upload workflows sometimes flatten asset folders into repository root.
+    // Support both layouts so textures cannot silently vanish after an update.
+    for(const folder of ['./assets/crosshall/','./']){
+      try{
+        const map=await loader.loadAsync(folder+file);
+        map.colorSpace=/(Normal|Roughness)$/.test(key)?THREE.NoColorSpace:THREE.SRGBColorSpace;
+        map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+        if(key!=='portraitLeft'&&key!=='portraitRight'){
+          map.wrapS=THREE.RepeatWrapping;
+          map.wrapT=THREE.RepeatWrapping;
+        }
+        if(key==='frieze')map.repeat.set(5,1);
+        assets[key]=map;
+        break;
+      }catch(error){
+        if(folder==='./')console.warn('Cross Hall – Textur an beiden Speicherorten nicht verfügbar:',file,error);
       }
-      if(key==='frieze')map.repeat.set(5,1);
-      assets[key]=map;
-    }catch(error){
-      // A missing optional texture must not prevent the rest of the game from starting.
-      console.warn('Cross Hall – Textur nicht verfügbar:',file,error);
     }
   }));
   return assets;

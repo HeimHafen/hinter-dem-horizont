@@ -2,7 +2,7 @@
 <html lang="de"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Hinter dem Horizont · Weißes Haus</title>
-<meta name="build" content="Cross Hall V4 · 15.11.2026">
+<meta name="build" content="Cross Hall V5 · 15.11.2026">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#202923;color:#fff7e4;font:16px system-ui}
 canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overflow-wrap:anywhere;position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;pointer-events:none;background:#17201ee8;padding:12px 16px;border-radius:12px}h1{font:24px Georgia;margin:0 0 5px}
@@ -31,7 +31,7 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <script type="module">
 import * as THREE from 'three';
 import {baueSpielfigur} from './spielfigur.js?v=2';
-import {baueCrossHallV4,ladeCrossHallAssetsV4,versperrtCrossHallV4} from './cross-hall-v4.js?v=4';
+import {baueCrossHallV5,ladeCrossHallAssetsV5,versperrtCrossHallV5} from './cross-hall-v5.js?v=5';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=5';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
@@ -1545,9 +1545,9 @@ async function start(){
   }
   // Historical Cross Hall treatment is now isolated in its own JS module.
   // All textures preload before the first game frame: no blank paintings / late decoration.
-  const crossHallAssets=await ladeCrossHallAssetsV4(THREE,renderer);
+  const crossHallAssets=await ladeCrossHallAssetsV5(THREE,renderer);
   crossHallAssets.environment=windowEnvironment.texture;
-  baueCrossHallV4(THREE,scene,exterior,renderer,obstacles,crossHallAssets);
+  baueCrossHallV5(THREE,scene,exterior,renderer,obstacles,crossHallAssets);
 
   function resoluteDesk(x,z){
     const desk=new THREE.Group();
@@ -2068,7 +2068,7 @@ async function start(){
     if(Math.hypot(px,pz-fountainZ)<fountainRadius+.25)return false;
     if(Math.abs(px)>31||pz>burgFuss-.4||pz< -7.8)return false;
     if(pz>=7.96&&pz<12.43&&(Math.abs(px)>1.23||door.rotation.y<1.45))return false;
-    if(versperrtCrossHallV4(px,pz))return false;
+    if(versperrtCrossHallV5(px,pz))return false;
     if(pz<8&&px>17.8)return false;
     if(pz<8&&px< -20.4)return false;
     if(pz<8&&px< -17.8&&(pz<2.86||pz>5.04))return false;

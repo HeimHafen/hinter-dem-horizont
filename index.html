@@ -16,7 +16,7 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {tor,hofX,hofStart,saalFront,imHof,baueBurgRundgang} from './burg-rundgang.js';
+import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=2';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
 const place=document.querySelector('#place'), gate=document.querySelector('#gate');
 try { await start(); } catch(error) {
@@ -1746,7 +1746,7 @@ async function start(){
     return bounds.every(([cx,cz])=>Math.hypot(px-cx,pz-cz)>.98);
   }
   function ground(px,pz){
-    if(burgInnen)return .03;
+    if(burgInnen)return burgBoden(pz);
     if(pz<12.04)return .89;
     if(Math.abs(px)>8.5||pz>20.55)return .03;
     if(pz<19.31)return .86;
@@ -1769,7 +1769,7 @@ async function start(){
     camera.rotation.set(pitch,yaw,0,'YXZ');
     burgAktion.hidden=!amBurgtor();
     burgAktion.textContent=burgInnen?'Zum Weißen Haus zurück':'Burgtor betreten';
-    const position=burgInnen?(z>saalFront?'Burg Hohenzollern · Halle':'Burg Hohenzollern · Innenhof'):z>=tor-3?'Burgtor · E oder antippen':z>=aussicht-2?'Aussicht · Burg Hohenzollern':z>=32?'Weg zur Burg Hohenzollern':z<-.35?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Cross Hall':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
+    const position=burgInnen?'Burg Hohenzollern · '+burgOrt(x,z):z>=tor-3?'Burgtor · E oder antippen':z>=aussicht-2?'Aussicht · Burg Hohenzollern':z>=32?'Weg zur Burg Hohenzollern':z<-.35?rooms[Math.min(4,Math.floor((x+18)/7.2))].name:z<7.8?'Cross Hall':z<12?'Vestibül':z<19?'Säulenvorbau':'Nordfassade · Pfeile oder WASD';
     if(place.textContent!==position)place.textContent=position;
     sky.position.copy(camera.position);
     sky.material.uniforms.drift.value+=dt*.022;

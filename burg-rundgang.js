@@ -5,17 +5,53 @@ export const hofX = 480;
 export const hofStart = 2.7;
 export const saalFront = 21;
 export const saalEnde = 31;
+const burgEnde = 59;
+const treppenStart = 33;
+const treppenEnde = 49;
+const stufen = 32;
+const hoehe = 5.12;
+const raeume = [
+  {x:-1, start:3, ende:8, name:'Wachstube'},
+  {x:1, start:4, ende:9, name:'Küche'},
+  {x:-1, start:13, ende:19, name:'Kapelle'},
+  {x:1, start:12, ende:19, name:'Archiv'}
+];
+
+const raumwaende = raeume.flatMap(({x,start,ende}) => [
+  [x*7.9,start,3.4,.5],[x*7.9,ende,3.4,.5],
+  [x*6.2,start+.55,.5,1.1],[x*6.2,ende-.55,.5,1.1]
+]);
 const hindernisse = [
   [-10,15.5,.8,31],[10,15.5,.8,31],
   [-5.7,0,8.6,1],[5.7,0,8.6,1],
   [-5.7,saalFront,8.15,.8],[5.7,saalFront,8.15,.8],
-  [-9.55,26,.8,10],[9.55,26,.8,10],[0,saalEnde,20,.8],
-  [-4.6,10,2.4,2.4],[5.8,10,1.8,.7],[-5,26,3.8,1.35],[5,26,3.8,1.35]
+  [-9.55,26,.8,10],[9.55,26,.8,10],
+  [-5.85,saalEnde,8.3,.8],[5.85,saalEnde,8.3,.8],
+  [-4.1,10,2.4,2.4],[4.8,10.5,1.8,.7],[-5,26,3.8,1.35],[5,26,3.8,1.35],
+  ...raumwaende,
+  ...raeume.map(({x,start,ende})=>[x*8.75,(start+ende)/2,1.2,1.4])
 ];
+
+export function burgBoden(z) {
+  const fortschritt=(z-treppenStart)/(treppenEnde-treppenStart);
+  return .03+Math.max(0,Math.min(stufen,Math.ceil(fortschritt*stufen)))*hoehe/stufen;
+}
+
+export function burgOrt(x,z){
+  const local=x-hofX;
+  const raum=raeume.find(({x,start,ende})=>local*x>6.25&&z>start&&z<ende);
+  if(raum)return raum.name;
+  if(z>=53)return 'Aussichtsturm';
+  if(z>=treppenEnde)return 'Wehrgang';
+  if(z>saalEnde)return 'Turmtreppe';
+  return z>saalFront?'Große Halle':'Innenhof';
+}
 
 export function imHof(x,z) {
   const local=x-hofX;
-  if(Math.abs(local)>9.55||z<.4||z>saalEnde-.4)return false;
+  const breite=z<=saalEnde+.6?9.55:z<53?1.48:3.05;
+  if(Math.abs(local)>breite||z<.4||z>burgEnde-.47)return false;
+  if(z>52.77&&z<53.38&&Math.abs(local)>1.42)return false;
   return !hindernisse.some(([cx,cz,w,d])=>Math.abs(local-cx)<w/2+.22&&Math.abs(z-cz)<d/2+.22);
 }
 
@@ -102,18 +138,74 @@ export function baueBurgRundgang(THREE,scene) {
   arch(0,saalFront,2.85,1.65);
   block(0,5.4,0,3.1,2.1,.9,stone[1]);
   block(0,5.5,saalFront,3.35,1.7,.8,stone[2]);
-  wall(0,saalEnde,20,6.1,.8);
+  for(const x of [-5.85,5.85])wall(x,saalEnde,8.3,6.1,.8);
+  arch(0,saalEnde,2.78,1.55);
+  block(0,5.28,saalEnde,3.5,1.65,.8,stone[2]);
+  for(const x of [-2.2,2.2])lamp(x,saalEnde-.5);
   block(0,6.14,26,20.6,.3,10.8,slate);
   for(const x of [-5,5]){
     block(x,.85,26,3.8,.18,1.35,oak);
     for(const dx of [-1.55,1.55]) block(x+dx,.4,26,.2,.8,1.1,oak);
   }
   const basin=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.2,.95,12),stone[3]);
-  basin.position.set(-4.6,.475,10);group.add(basin);
+  basin.position.set(-4.1,.475,10);group.add(basin);
   const water=new THREE.Mesh(new THREE.CylinderGeometry(.86,.86,.035,12),mat(0x42696b));
-  water.position.set(-4.6,.965,10);group.add(water);
-  block(5.8,.47,10,1.8,.2,.7,oak);
+  water.position.set(-4.1,.965,10);group.add(water);
+  block(4.8,.47,10.5,1.8,.2,.7,oak);
   for(const x of [-2.7,2.7])lamp(x,saalFront-.46);
+  for(const [x,z,w,d] of raumwaende)wall(x,z,w,3.75,d);
+  for(const {x,start,ende,name} of raeume){
+    const mid=(start+ende)/2;
+    block(x*7.9,3.82,mid,3.7,.27,ende-start+.45,slate);
+    block(x*6.2,3.49,mid,.54,.57,ende-start,stone[4]);
+    lamp(x*7.2,start+.48,2.32);
+    const shelf=x*8.75;
+    if(name==='Archiv'){
+      for(const y of [.26,.68,1.10,1.52,1.94]){
+        block(shelf,y,mid,1.2,.095,1.4,oak);
+        for(let i=0;i<8;i++)block(shelf,y+.21,mid+(i-3.5)*.15,.47,.32,.13,[banner,oak,brass][(i+Math.round(y*10))%3]);
+      }
+      for(const d of [-.67,.67])block(shelf,1.13,mid+d,.99,2.11,.08,oak);
+    }else if(name==='Kapelle'){
+      block(shelf,.47,mid,1.2,.95,1.4,stone[4]);
+      block(shelf,1.05,mid,1.33,.17,1.52,stone[1]);
+      block(shelf+.18,2.37,mid,.13,1.23,.11,brass);
+      block(shelf+.18,2.57,mid,.13,.11,.70,brass);
+    }else{
+      block(shelf,.52,mid,1.2,.93,1.4,oak);
+      block(shelf,1.01,mid,1.26,.14,1.47,stone[2]);
+      if(name==='Küche'){
+        const pot=new THREE.Mesh(new THREE.CylinderGeometry(.26,.19,.31,10),slate);
+        pot.position.set(shelf,1.23,mid);group.add(pot);
+      }else{
+        for(const z of [mid-.42,mid+.42])block(shelf,1.23,z,.42,.26,.35,brass);
+      }
+    }
+  }
+
+  // Continuous staircase, upper wall walk and lookout.
+  block(0,-.22,32,3.6,.44,2.8,stone[2]);
+  for(let i=0;i<stufen;i++){
+    const z=treppenStart+(i+.5)*.5;
+    const h=(i+1)*hoehe/stufen;
+    block(0,h/2-.01,z,3.65,h+.02,.5,stone[i%5]);
+    for(const x of [-1.85,1.85])block(x,h+.38,z,.29,.76,.50,stone[3]);
+    if(i%8===2)lamp(-1.85,z,h+1);
+  }
+  block(0,hoehe-.18,51,3.65,.36,4.4,stone[2]);
+  for(const x of [-1.85,1.85])block(x,hoehe+.46,51,.32,.91,4.45,stone[3]);
+  block(0,hoehe-.27,56,7,.54,6.4,stone[2]);
+  for(const x of [-3.36,3.36]){
+    block(x,hoehe+.52,56,.37,1.04,6,stone[3]);
+    for(let z=53.3;z<59;z+=1)block(x,hoehe+1.25,z,.48,.49,.48,stone[4]);
+  }
+  block(0,hoehe+.51,59,7,1.02,.46,stone[3]);
+  for(const x of [-2.45,2.45]){
+    block(x,hoehe+1.63,53,.72,3.25,.8,stone[1]);
+    block(x,hoehe+1.63,58.7,.72,3.25,.8,stone[1]);
+    flag(x,58.87,hoehe+2.57);
+  }
+  for(let x=-3;x<=3;x++)block(x,hoehe+1.28,59,.47,.49,.55,stone[4]);
   for(let i=base;i<group.children.length;i++)group.children[i].position.x+=hofX;
 
   // Reuse one draw call per block material.
@@ -132,7 +224,32 @@ export function baueBurgRundgang(THREE,scene) {
     group.add(blocks);
   }
 
+  // Distant hills establish a horizon for the lookout.
+  const hills=new THREE.Group();
+  hills.position.x=hofX;
+  const ridgeGeometry=new THREE.ConeGeometry(1,1,7);
+  const ridgeMaterials=[mat(0x667b67),mat(0x516a5a),mat(0x82927d)];
+  for(let i=0;i<25;i++){
+    const angle=i*Math.PI*2/25;
+    const radius=75+17*(i%4);
+    const hill=new THREE.Mesh(ridgeGeometry,ridgeMaterials[i%3]);
+    hill.position.set(Math.cos(angle)*radius,-11,27+Math.sin(angle)*radius);
+    hill.scale.set(25+5*(i%4),19+5*(i%5),21+4*(i%6));
+    hill.rotation.y=i*1.72;
+    hills.add(hill);
+  }
+  const valley=new THREE.Mesh(new THREE.CircleGeometry(190,48),mat(0x687956));
+  valley.rotation.x=-Math.PI/2;
+  valley.position.set(0,-19,27);
+  hills.add(valley);
+  scene.add(hills);
+
   const courtLight=new THREE.PointLight(0xffd8a3,65,26,2);
   courtLight.position.set(hofX,4.6,25);
   scene.add(courtLight);
+  for(const {x,start} of raeume){
+    const light=new THREE.PointLight(0xffcb87,14,6,2);
+    light.position.set(hofX+x*7.6,2.5,start+.7);
+    scene.add(light);
+  }
 }

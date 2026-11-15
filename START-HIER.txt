@@ -10,12 +10,15 @@ und http://localhost:8000 öffnen. Die Seite verwendet Three.js über jsDelivr.
 
 Am Aussichtspunkt geradeaus zum steinernen Tor gehen. Sobald die Schaltfläche
 „Burgtor betreten“ erscheint, antippen oder E drücken. Du landest im begehbaren
-Innenhof. Geradeaus durch den zweiten Bogen erreichst du die Halle. Zurück geht
-es über dasselbe Eingangstor mit „Zum Weißen Haus zurück“.
+Innenhof. Links liegen Wachstube und Kapelle, rechts Küche und Archiv.
+Geradeaus durch den großen Bogen erreichst du die Halle. Durch den hinteren
+Hallenbogen geht es zu Fuß über die Treppe zum Wehrgang und zum Aussichtsturm.
+Für den Rückweg folgst du der Treppe hinab und gehst zurück zum Eingangstor.
+Dort tippst du auf „Zum Weißen Haus zurück“ oder drückst E.
 
 Die 50 Blöcke reichen von der Haustür bis zum Beginn des gescannten Berghangs.
 Der Scan ist das Außenmodell. Das Portal am Bergfuß führt in einen separat
-modellierten, frei gestalteten Hof mit Halle.
+modellierten, frei gestalteten Burgbereich mit Hof, Seitenräumen, Halle und Aussichtsturm.
 
 QUELLE / CREDITS
 „Burg Hohenzollern“ von LAD BW.

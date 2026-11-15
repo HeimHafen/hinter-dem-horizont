@@ -114,6 +114,7 @@ async function start(){
   sun.shadow.bias=-.00012;
   model.traverse(o=>{
     if(!o.isMesh)return;
+    if(/^Cube[.]?442$/.test(o.name))o.visible=false;
     o.receiveShadow=true;
     o.castShadow=o.material.name!=='Rasen'&&o.material.name!=='Kies';
   });
@@ -359,6 +360,95 @@ async function start(){
       `);
     };
   }
+  // North Lawn: the carriage drive curves around the fountain on the house axis.
+  const driveMaterial=new THREE.MeshStandardMaterial({color:0x777670,roughness:.98,side:THREE.DoubleSide});
+  const granite=new THREE.MeshStandardMaterial({color:0xb8b7ad,roughness:.89,side:THREE.DoubleSide});
+  grain(driveMaterial,28,.19);
+  grain(granite,17,.14);
+  const fountainZ=31.2, fountainRadius=2.64;
+  function driveRibbon(offset,width,height,material){
+    const vertices=[],indices=[];
+    for(let i=0;i<=96;i++){
+      const a=i/96*Math.PI;
+      const x=26*Math.cos(a),z=46-23*Math.sin(a);
+      const nx=Math.cos(a)/26,nz=-Math.sin(a)/23;
+      const norm=Math.hypot(nx,nz);
+      for(const edge of [-1,1]){
+        const d=(offset+edge*width/2)/norm;
+        vertices.push(x+nx*d,height,z+nz*d);
+      }
+      const k=i*2;
+      if(i)indices.push(k-2,k-1,k,k-1,k+1,k);
+    }
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    const mesh=new THREE.Mesh(geometry,material);
+    mesh.receiveShadow=true;
+    exterior.add(mesh);
+  }
+  driveRibbon(0,6.2,.044,driveMaterial);
+  for(const edge of [-1,1])driveRibbon(edge*3.15,.19,.069,granite);
+  function fountainRing(inner,outer,y,material){
+    const mesh=new THREE.Mesh(new THREE.RingGeometry(inner,outer,96),material);
+    mesh.rotation.x=-Math.PI/2;
+    mesh.position.set(0,y,fountainZ);
+    mesh.receiveShadow=true;
+    exterior.add(mesh);
+  }
+  fountainRing(2.58,3.12,.052,granite);
+  for(const [radius,height,y] of [[2.64,.31,.195],[2.68,.09,.385]]){
+    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,height,96,1,true),granite);
+    mesh.position.set(0,y,fountainZ);
+    mesh.castShadow=mesh.receiveShadow=true;
+    exterior.add(mesh);
+  }
+  fountainRing(2.41,2.68,.43,granite);
+  const waterMaterial=new THREE.MeshStandardMaterial({color:0x406d70,roughness:.28,metalness:.25});
+  waterMaterial.envMap=windowEnvironment.texture;
+  grain(waterMaterial,7,.16);
+  fountainRing(0,2.43,.32,waterMaterial);
+  const sprayPositions=new Float32Array(135*3);
+  const sprayGeometry=new THREE.BufferGeometry();
+  sprayGeometry.setAttribute('position',new THREE.BufferAttribute(sprayPositions,3).setUsage(THREE.DynamicDrawUsage));
+  const spray=new THREE.Points(sprayGeometry,new THREE.PointsMaterial({
+    color:0xe0f5ff,size:.033,transparent:true,opacity:.74,depthWrite:false
+  }));
+  spray.position.z=fountainZ;
+  spray.frustumCulled=false;
+  exterior.add(spray);
+  function animateFountain(now){
+    for(let i=0;i<135;i++){
+      const t=(now*.0011+i*.6180339)%1;
+      const angle=i*2.399963;
+      const radius=t*(.33+(i%9)*.086);
+      sprayPositions[i*3]=Math.cos(angle)*radius;
+      sprayPositions[i*3+1]=.32+4*t*(1-t)*(1.10+(i%9)*.095);
+      sprayPositions[i*3+2]=Math.sin(angle)*radius;
+    }
+    sprayGeometry.attributes.position.needsUpdate=true;
+  }
+  const shrubGeometry=new THREE.IcosahedronGeometry(1,2);
+  const shrubMaterial=new THREE.MeshStandardMaterial({roughness:1});
+  const shrubs=new THREE.InstancedMesh(shrubGeometry,shrubMaterial,48);
+  const shrubTransform=new THREE.Object3D();
+  const shrubColor=new THREE.Color();
+  for(let i=0;i<48;i++){
+    const side=i<24?-1:1;
+    const t=i%24, clump=Math.floor(t/6), leaf=t%6;
+    const angle=leaf*Math.PI/3+clump*.8;
+    const height=.37+.13*Math.sin(t*2.1)+clump*.055;
+    shrubTransform.position.set(side*(12+clump*3.55)+Math.cos(angle)*.42,
+      height*.76,14.9+(clump%2)*.65+Math.sin(angle)*.43);
+    shrubTransform.scale.set(.5+height*.45,height,.59);
+    shrubTransform.rotation.y=angle;
+    shrubTransform.updateMatrix();
+    shrubs.setMatrixAt(i,shrubTransform.matrix);
+    shrubs.setColorAt(i,shrubColor.setHSL(.24+(t%5)*.012,.32,.19+(t%7)*.012));
+  }
+  shrubs.castShadow=shrubs.receiveShadow=true;
+  exterior.add(shrubs);
   grain(stone,19,.065);
   const dressed=new Set();
   model.traverse(mesh=>{
@@ -1917,6 +2007,7 @@ async function start(){
   function valid(px,pz){
     if(burgInnen)return imHof(px,pz);
     if(pz>tor-1&&Math.abs(Math.abs(px)-2.45)<1.15)return false;
+    if(Math.hypot(px,pz-fountainZ)<fountainRadius+.25)return false;
     if(Math.abs(px)>31||pz>burgFuss-.4||pz< -7.8)return false;
     if(pz>=7.96&&pz<12.43&&(Math.abs(px)>1.23||door.rotation.y<1.45))return false;
     if(pz<8&&Math.abs(px)>17.8)return false;
@@ -1949,6 +2040,7 @@ async function start(){
   let blickrichtung=0;
 
   renderer.setAnimationLoop(now=>{
+    animateFountain(now);
     const dt=Math.min(.05,(now-last)/1000);last=now;
     const f=Number(pressed('w','arrowup'))-Number(pressed('s','arrowdown'));
     const s=Number(pressed('d','arrowright'))-Number(pressed('a','arrowleft'));

@@ -2,6 +2,7 @@
 <html lang="de"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Hinter dem Horizont · Weißes Haus</title>
+<meta name="build" content="Cross Hall V3 · 15.11.2026">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#202923;color:#fff7e4;font:16px system-ui}
 canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overflow-wrap:anywhere;position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;pointer-events:none;background:#17201ee8;padding:12px 16px;border-radius:12px}h1{font:24px Georgia;margin:0 0 5px}
@@ -18,7 +19,7 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <script type="module">
 import * as THREE from 'three';
 import {baueSpielfigur} from './spielfigur.js?v=2';
-import {baueCrossHallReferenz} from './cross-hall-referenz.js?v=2';
+import {baueCrossHallV3,ladeCrossHallAssetsV3,versperrtCrossHallV3} from './cross-hall-v3.js?v=3';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=5';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
@@ -1531,7 +1532,9 @@ async function start(){
     scene.add(chandelier);
   }
   // Historical Cross Hall treatment is now isolated in its own JS module.
-  baueCrossHallReferenz(THREE,scene,exterior,renderer,obstacles);
+  // All textures preload before the first game frame: no blank paintings / late decoration.
+  const crossHallAssets=await ladeCrossHallAssetsV3(THREE,renderer);
+  baueCrossHallV3(THREE,scene,exterior,renderer,obstacles,crossHallAssets);
 
   function resoluteDesk(x,z){
     const desk=new THREE.Group();
@@ -2004,7 +2007,7 @@ async function start(){
   }
   let x=0,z=innerWidth<innerHeight?52:42,yaw=0,pitch=.08,look=null,opened=false;
   // Optional direct preview URL: index.html#cross-hall (default game start unchanged).
-  if(location.hash==='#cross-hall'){x=14.1;z=3.97;yaw=Math.PI/2;pitch=.045;opened=true;}
+  if(location.hash==='#cross-hall'){x=16.2;z=3.95;yaw=Math.PI/2;pitch=.015;opened=true;}
   let previousX=0,previousY=0;
   const castleView=document.querySelector('#castle-view');
   castleView.hidden=false;
@@ -2052,7 +2055,10 @@ async function start(){
     if(Math.hypot(px,pz-fountainZ)<fountainRadius+.25)return false;
     if(Math.abs(px)>31||pz>burgFuss-.4||pz< -7.8)return false;
     if(pz>=7.96&&pz<12.43&&(Math.abs(px)>1.23||door.rotation.y<1.45))return false;
-    if(pz<8&&Math.abs(px)>17.8)return false;
+    if(versperrtCrossHallV3(px,pz))return false;
+    if(pz<8&&px>17.8)return false;
+    if(pz<8&&px< -20.4)return false;
+    if(pz<8&&px< -17.8&&(pz<2.86||pz>5.04))return false;
     if(ovalBoundary.some(point=>Math.hypot(px-point.x,pz-point.z)<.33))return false;
     if(obstacles.some(({x,z,w,d})=>Math.abs(px-x)<w/2+.21&&Math.abs(pz-z)<d/2+.21))return false;
     if(pz>12.75&&pz<17.75&&Math.abs(Math.abs(px)-7.7)<.42)return false;

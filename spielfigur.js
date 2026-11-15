@@ -19,18 +19,78 @@ export function baueSpielfigur(THREE,scene){
     parent.add(group);
     return group;
   }
+  const fabric=document.createElement('canvas');
+  fabric.width=fabric.height=128;
+  const ctx=fabric.getContext('2d');
+  const pixels=ctx.createImageData(128,128);
+  for(let y=0;y<128;y++)for(let x=0;x<128;x++){
+    const v=224+14*Math.sin(x*Math.PI*.5)+10*Math.cos(y*Math.PI*.5)+6*Math.sin(x*1.13+y*.81);
+    pixels.data.set([v,v,v,255],(y*128+x)*4);
+  }
+  ctx.putImageData(pixels,0,0);
+  const weave=new THREE.CanvasTexture(fabric);
+  weave.wrapS=weave.wrapT=THREE.RepeatWrapping;
+  weave.repeat.set(2,3);
+  weave.colorSpace=THREE.SRGBColorSpace;
+  for(const textile of [cloth,folds,wrap]){
+    textile.map=weave;
+    textile.bumpMap=weave;
+    textile.bumpScale=.0014;
+  }
+
+  // A continuous garment surface bent around the actual limb joints.
+  function garment(parent,mat,profile){
+    const sides=24, rings=profile.length;
+    const geometry=new THREE.BufferGeometry();
+    const points=new THREE.BufferAttribute(new Float32Array(rings*sides*3),3);
+    points.setUsage(THREE.DynamicDrawUsage);
+    const uv=[], indices=[];
+    for(let j=0;j<rings;j++)for(let k=0;k<sides;k++){
+      uv.push(k/sides,j/(rings-1));
+      if(j===rings-1)continue;
+      const a=j*sides+k,b=j*sides+(k+1)%sides;
+      indices.push(a,b,a+sides,b,b+sides,a+sides);
+    }
+    geometry.setAttribute('position',points);
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+    geometry.setIndex(indices);
+    const mesh=new THREE.Mesh(geometry,mat);
+    mesh.castShadow=mesh.receiveShadow=true;
+    mesh.frustumCulled=false;
+    parent.add(mesh);
+    function pose(angle=0,pivot=-1){
+      for(let j=0;j<rings;j++){
+        const [y,rx,rz,cx=0,cz=0]=profile[j];
+        const t=THREE.MathUtils.smoothstep(pivot-y,-.065,.065);
+        const a=angle*t;
+        const b=Math.abs(pivot)>1?0:y-pivot;
+        for(let k=0;k<sides;k++){
+          const theta=k*Math.PI*2/sides;
+          const fold=1+.035*Math.cos(theta*7+j*.93)+.027*Math.sin(theta*4-j*1.12);
+          const z=cz+Math.sin(theta)*rz*fold;
+          points.setXYZ(j*sides+k,cx+Math.cos(theta)*rx*fold,
+            y+b*(Math.cos(a)-1)-z*Math.sin(a),z*Math.cos(a)+b*Math.sin(a));
+        }
+      }
+      points.needsUpdate=true;
+      geometry.computeVertexNormals();
+    }
+    pose();
+    return pose;
+  }
   const body=joint(root,0,.89,0);
-  oval(body,cloth,0,.05,0,.221,.22,.14);
-  oval(body,cloth,0,.335,-.01,.245,.33,.15);
-  oval(body,folds,0,.474,.01,.253,.142,.153);
+  garment(body,cloth,[
+    [.625,.10,.085],[.58,.159,.112],[.52,.229,.131],[.43,.231,.142],
+    [.32,.207,.139],[.23,.183,.126],[.13,.179,.123],[.06,.198,.139],
+    [-.035,.224,.150],[-.12,.221,.148],[-.145,.211,.136]
+  ]);
   oval(body,leather,0,.116,0,.227,.057,.147);
   oval(body,clasp,.065,.12,-.144,.064,.039,.013);
   oval(body,wrap,0,.633,0,.103,.107,.091);
   for(const side of [-1,1]){
     const lapel=oval(body,side===1?cloth:folds,side*.056,.371,-.133,.066,.235,.024);
     lapel.rotation.z=side*.33;
-    const shoulderFold=oval(body,folds,side*.133,.492,.109,.064,.136,.037);
-    shoulderFold.rotation.z=side*.62;
+
   }
   const head=joint(body,0,.735,0);
   oval(head,cloth,0,.055,.006,.124,.164,.113);
@@ -45,20 +105,29 @@ export function baueSpielfigur(THREE,scene){
   const legs=[],arms=[];
   for(const side of [-1,1]){
     const thigh=joint(body,side*.112,-.015,0);
-    oval(thigh,cloth,0,-.20,0,.106,.25,.10);
+    const trousers=garment(thigh,cloth,[
+      [.045,.096,.103],[-.06,.111,.109],[-.15,.106,.10],[-.24,.096,.09],
+      [-.34,.085,.081],[-.415,.078,.075],[-.49,.074,.077],
+      [-.58,.071,.075],[-.67,.064,.062],[-.77,.052,.050]
+    ]);
     const shin=joint(thigh,0,-.415,0);
-    oval(shin,folds,0,-.181,0,.073,.206,.071);
+
     for(let i=0;i<4;i++)oval(shin,wrap,0,-.17-i*.049,0,.074-i*.003,.027,.072-i*.002);
     oval(shin,leather,0,-.391,-.061,.073,.058,.126);
     oval(shin,sole,0,-.422,-.062,.074,.031,.128);
-    legs.push({thigh,shin});
+    legs.push({thigh,shin,trousers});
     const arm=joint(body,side*.237,.468,0);
     arm.rotation.z=side*.12;
-    oval(arm,cloth,side*.031,-.127,0,.094,.181,.092);
+    const sleeve=garment(arm,cloth,[
+      [.071,.029,.043], [.028,.082,.078],[-.065,.092,.086,side*.011],
+      [-.145,.083,.078,side*.022],[-.226,.071,.066,side*.035],
+      [-.271,.063,.062,side*.046],[-.33,.067,.063,side*.046],
+      [-.40,.061,.058,side*.046],[-.47,.052,.048,side*.046],[-.502,.047,.044,side*.046]
+    ]);
     const forearm=joint(arm,side*.046,-.271,0);
-    oval(forearm,folds,0,-.121,0,.066,.156,.066);
+
     oval(forearm,leather,0,-.252,-.011,.056,.09,.055);
-    arms.push({arm,forearm});
+    arms.push({arm,forearm,sleeve});
   }
   let cycle=0,amount=0;
   return {root,animate(dt,speed){
@@ -73,6 +142,8 @@ export function baueSpielfigur(THREE,scene){
       legs[i].shin.rotation.x=-Math.max(0,stride)*.62*amount;
       arms[i].arm.rotation.x=-stride*.33*amount;
       arms[i].forearm.rotation.x=.12+Math.max(0,-stride)*.30*amount;
+      arms[i].sleeve(arms[i].forearm.rotation.x,-.271);
+      legs[i].trousers(legs[i].shin.rotation.x,-.415);
     }
   }};
 }

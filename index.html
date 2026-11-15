@@ -149,21 +149,12 @@ async function start(){
     for(let i=0;i<11;i++)surface(side*7.7,1.2,17.4-i*.45,.13,.67,.155,stone);
     surface(side*7.7,1.57,15.15,.31,.16,4.85,stone);
   }
-  for(let x=-20;x<=20;x+=5){
-    for(const [y,h] of [[2.75,2.85],[7.8,2.75],[11.92,1.85]]){
-      if((x===0&&y<3)||(y>11&&Math.abs(x)<=5))continue;
-      for(const side of [-1,1])surface(x+side*.97,y,12.24,.13,h+.25,.23,stone);
-      surface(x,y+h*.5+.13,12.31,2.26,.14,.4,stone);
-    }
-  }
-  // GLTFLoader strips the dot from names such as Cube.240.
-  const coveredAtticPieces = new Set([509,511,513]);
-  for(const first of [240,258,285]){
-    for(let index=first;index<first+9;index++)coveredAtticPieces.add(index);
-  }
+  // Hide the baked exterior window assemblies and their separate lintels.
   model.traverse(piece=>{
-    const match=/^Cube\.?(\d+)$/.exec(piece.name);
-    if(piece.isMesh&&match&&coveredAtticPieces.has(Number(match[1])))piece.visible=false;
+    const match=/^Cube[.]?(\d+)$/.exec(piece.name);
+    if(!piece.isMesh||!match)return;
+    const id=Number(match[1]);
+    if((id>=141&&id<=374)||(id>=504&&id<=517))piece.visible=false;
   });
   const reflectionCanvas=document.createElement('canvas');
   reflectionCanvas.width=256;
@@ -215,24 +206,70 @@ async function start(){
     if(Math.abs(x)<7.9)continue;
     surface(x,13.53,12.28,.16,.21,.24,stone);
   }
-  for(let x=-20;x<=20;x+=5)for(const [y,h] of [[2.75,2.85],[7.8,2.75],[11.92,1.85]]){
-    if((x===0&&y<3)||(y>11&&Math.abs(x)<=5))continue;
-    surface(x,y,12.251,1.76,h,.045,limestoneShadow);
-    surface(x,y,12.281,1.58,h-.15,.034,glass);
-    for(const offset of [-.78,-.26,.26,.78])
-      surface(x+offset,y,12.318,.049,h-.11,.047,paintedSash);
-    for(const offset of [-.47,-.235,0,.235,.47])
-      surface(x,y+h*offset,12.32,1.59,offset===0?.084:.044,.048,paintedSash);
-    surface(x,y-h/2-.066,12.36,2.02,.111,.32,stone);
-    if(y!==7.8)continue;
-    for(const side of [-1,1]){
-      const pediment=new THREE.Mesh(new THREE.BoxGeometry(1.15,.083,.27),stone);
-      pediment.position.set(x+side*.53,y+h/2+.33,12.35);
-      pediment.rotation.z=-side*.28;
-      pediment.castShadow=pediment.receiveShadow=true;
-      exterior.add(pediment);
+  // North elevation: three central axes and four outer axes per side.
+  const northAxes=[-20.1,-16.2,-12.25,-8.3,-4.1,0,4.1,8.3,12.25,16.2,20.1];
+  const northWindowLevels=[
+    {y:2.72,h:2.73,w:1.62,rows:6},
+    {y:7.52,h:2.78,w:1.65,rows:6},
+    {y:11.82,h:1.65,w:1.58,rows:4}
+  ];
+  function northWindowCrown(x,y,span,curved){
+    const rise=.32;
+    const profile=new THREE.Shape();
+    profile.moveTo(-span,y);
+    if(curved)profile.quadraticCurveTo(0,y+2*rise,span,y);
+    else profile.lineTo(0,y+rise);
+    profile.lineTo(span,y);
+    profile.lineTo(-span,y);
+    const infill=new THREE.Mesh(new THREE.ShapeGeometry(profile,24),stone);
+    infill.position.set(x,0,12.41);
+    exterior.add(infill);
+    const points=Array.from({length:25},(_,i)=>{
+      const t=i/12-1;
+      const height=curved?rise*(1-t*t):rise*(1-Math.abs(t));
+      return new THREE.Vector3(x+t*span,y+height,12.455);
+    });
+    // A straight two-part profile keeps the peak of the triangular caps sharp.
+    if(!curved){
+      for(const side of [-1,1]){
+        const edge=new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(span,rise),.105,.26),stone);
+        edge.position.set(x+side*span/2,y+rise/2,12.425);
+        edge.rotation.z=-side*Math.atan2(rise,span);
+        edge.castShadow=edge.receiveShadow=true;
+        exterior.add(edge);
+      }
+    }else{
+      const edge=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,.067,8,false),stone);
+      edge.castShadow=edge.receiveShadow=true;
+      exterior.add(edge);
     }
   }
+  northAxes.forEach((x,index)=>{
+    northWindowLevels.forEach(({y,h,w,rows},level)=>{
+      if((level===0&&x===0)||(level===2&&Math.abs(x)<=4.1))return;
+      const top=y+h/2;
+      const sill=y-h/2;
+      surface(x,y,12.10,w+.30,h+.25,.24,stone);
+      surface(x,y,12.235,w+.08,h+.06,.035,limestoneShadow);
+      surface(x,y,12.258,w,h,.025,glass);
+      for(const side of [-1,1]){
+        surface(x+side*(w/2+.065),y,12.33,.13,h+.16,.17,stone);
+        surface(x+side*w/2,y,12.29,.046,h,.045,paintedSash);
+      }
+      for(const offset of [-w/6,w/6])surface(x+offset,y,12.289,.031,h,.04,paintedSash);
+      for(let row=0;row<=rows;row++){
+        surface(x,sill+h*row/rows,12.29,w,.036+(row===rows/2?.035:0),.04,paintedSash);
+      }
+      surface(x,sill-.069,12.38,w+.39,.11,.36,stone);
+      surface(x,sill-.146,12.32,w+.24,.059,.25,stone);
+      surface(x,top+.095,12.34,w+.32,.13,.23,stone);
+      if(level===1){
+        surface(x,top+.198,12.40,w+.55,.098,.33,stone);
+        northWindowCrown(x,top+.247,(w+.50)/2,index%2===0);
+        for(const side of [-1,1])surface(x+side*(w/2+.075),top-.057,12.38,.115,.38,.20,stone);
+      }
+    });
+  });
   // Continue the stone courses around the rear while leaving the passage geometry intact.
   for(const [y,h,d] of [[1.02,.16,.18],[5.02,.18,.27],[9.46,.12,.21],[13.69,.22,.33]])
     surface(0,y,-12.16,46.7,h,d,stone);
@@ -327,7 +364,7 @@ async function start(){
       `);
     };
   }
-  grain(stone,15,.09);
+  grain(stone,19,.065);
   const dressed=new Set();
   model.traverse(mesh=>{
     if(!mesh.isMesh||dressed.has(mesh.material))return;

@@ -390,12 +390,43 @@ async function start(){
   }
   driveRibbon(0,6.2,.044,driveMaterial);
   for(const edge of [-1,1])driveRibbon(edge*3.15,.19,.069,granite);
+  const gravel=new THREE.MeshStandardMaterial({
+    color:0xa0947f,roughness:1,side:THREE.DoubleSide
+  });
+  grain(gravel,32,.29);
+  scene.getObjectByName('Burgweg').material=gravel;
+  // The two paths peel away from the castle axis and meet the drive beside the basin.
+  for(const side of [-1,1]){
+    const positions=[],faces=[];
+    for(let i=0;i<=48;i++){
+      const t=i/48;
+      const angle=t*Math.PI*.73;
+      const x=side*6.9*Math.pow(Math.sin(angle),1.5);
+      const z=40.02-16.12*t;
+      const dx=side*6.9*1.5*Math.PI*.73*Math.cos(angle)*Math.sqrt(Math.sin(angle));
+      const length=Math.hypot(16.12,dx);
+      const halfWidth=1.9-.91*Math.sin(t*Math.PI/2);
+      for(const edge of [-1,1]){
+        positions.push(x+edge*halfWidth*16.12/length,.035,z+edge*halfWidth*dx/length);
+      }
+      const k=i*2;
+      if(i)faces.push(k-2,k-1,k,k-1,k+1,k);
+    }
+    const strip=new THREE.BufferGeometry();
+    strip.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    strip.setIndex(faces);
+    strip.computeVertexNormals();
+    const path=new THREE.Mesh(strip,gravel);
+    path.receiveShadow=true;
+    exterior.add(path);
+  }
   function fountainRing(inner,outer,y,material){
     const mesh=new THREE.Mesh(new THREE.RingGeometry(inner,outer,96),material);
     mesh.rotation.x=-Math.PI/2;
     mesh.position.set(0,y,fountainZ);
     mesh.receiveShadow=true;
     exterior.add(mesh);
+    return mesh;
   }
   fountainRing(2.58,3.12,.052,granite);
   for(const [radius,height,y] of [[2.64,.31,.195],[2.68,.09,.385]]){
@@ -409,6 +440,15 @@ async function start(){
   waterMaterial.envMap=windowEnvironment.texture;
   grain(waterMaterial,7,.16);
   fountainRing(0,2.43,.32,waterMaterial);
+  const ripples=Array.from({length:5},()=>{
+    const shimmer=new THREE.MeshBasicMaterial({
+      color:0xc7e2e0,transparent:true,opacity:0,depthWrite:false
+    });
+    return fountainRing(.973,1,.325,shimmer);
+  });
+  const nozzle=new THREE.Mesh(new THREE.CylinderGeometry(.13,.2,.15,20),granite);
+  nozzle.position.set(0,.335,fountainZ);
+  exterior.add(nozzle);
   const sprayPositions=new Float32Array(135*3);
   const sprayGeometry=new THREE.BufferGeometry();
   sprayGeometry.setAttribute('position',new THREE.BufferAttribute(sprayPositions,3).setUsage(THREE.DynamicDrawUsage));
@@ -419,10 +459,16 @@ async function start(){
   spray.frustumCulled=false;
   exterior.add(spray);
   function animateFountain(now){
+    ripples.forEach((ripple,index)=>{
+      const phase=(now*.00058+index/5)%1;
+      const radius=.14+2.19*phase;
+      ripple.scale.set(radius,radius,1);
+      ripple.material.opacity=.27*Math.sin(Math.PI*phase);
+    });
     for(let i=0;i<135;i++){
       const t=(now*.0011+i*.6180339)%1;
       const angle=i*2.399963;
-      const radius=t*(.33+(i%9)*.086);
+      const radius=t*(.12+(i%9)*.14);
       sprayPositions[i*3]=Math.cos(angle)*radius;
       sprayPositions[i*3+1]=.32+4*t*(1-t)*(1.10+(i%9)*.095);
       sprayPositions[i*3+2]=Math.sin(angle)*radius;

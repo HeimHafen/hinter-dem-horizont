@@ -14,12 +14,13 @@ export async function ladeBurg(THREE, loader, scene) {
   burg.position.set(-mitte.x, -17 - bounds.min.y, burgFuss - bounds.min.z);
   scene.add(burg);
 
-  const wegbeginn = 35;
+  const wegbeginn = 40;
   const weglaenge = burgFuss - 1.5 - wegbeginn;
   const weg = new THREE.Mesh(
     new THREE.PlaneGeometry(3.8, weglaenge),
     new THREE.MeshStandardMaterial({color: 0x9d8a6f, roughness: 1})
   );
+  weg.name = "Burgweg";
   weg.rotation.x = -Math.PI / 2;
   weg.position.set(0, .032, wegbeginn + weglaenge / 2);
   weg.receiveShadow = true;

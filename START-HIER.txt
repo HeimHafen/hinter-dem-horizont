@@ -1,40 +1,21 @@
-BURG LICHTFELS • HINTER DEM HORIZONT
+HINTER DEM HORIZONT · WEISSES HAUS & BURG HOHENZOLLERN
 
-Das Paket ist ein vollständiger Stand der separaten Spielwelt mit dem Weißen Haus.
-1. ZIP entpacken.
-2. Den Inhalt in denselben Webordner legen, in dem die bisherige Weißes-Haus-Welt
-   liegt. Alternativ in einem eigenen Ordner zum Testen veröffentlichen.
-3. index.html über die Webadresse öffnen und „Zur Burg schauen“ antippen.
-   Auf dem Handy die Pfeiltasten zum Gehen nutzen und über die Szene streichen,
-   um dich umzusehen. Auf dem Desktop funktionieren WASD und die Pfeiltasten.
+ZIP entpacken und die Dateien des Ordners gemeinsam auf deinen Webserver legen.
+index.html über die Webadresse öffnen. Auf „Zur Burg schauen“ tippen.
+Auf dem Handy mit den Pfeiltasten laufen und über die Szene streichen.
+Am Rechner per WASD oder Pfeiltasten laufen und mit der Maus ziehen.
 
-Lokal am Rechner im entpackten Verzeichnis ausführen:
-  python3 -m http.server 8000
-Dann http://localhost:8000 öffnen. Die Seite lädt Three.js über jsDelivr,
-benötigt also Internet. Direktes Öffnen der lokalen HTML-Datei kann durch
-die Modul- und GLB-Ladebeschränkungen des Browsers scheitern.
+Lokal kannst du im entpackten Ordner python3 -m http.server 8000 ausführen
+und http://localhost:8000 öffnen. Die Seite verwendet Three.js über jsDelivr.
 
-Dateien für den Einbau
-- index.html: aktualisierte Welt mit dem Weißen Haus
-- Weisses-Haus-Innen.glb: vorhandenes Hausmodell
-- burg-lichtfels.js: Position, Weg und Kollisionen
-- Burg-Lichtfels.glb: eigens gebautes Burgmodell samt Umgebungselementen
+Die 50 Blöcke reichen von der Haustür bis zum Beginn des gescannten Berghangs
+auf der Burgseite. Die Burg selbst sitzt weiter oben im Scan. Der Weg führt
+zu einem Aussichtspunkt. Der Scan ist als Außenkulisse eingebunden.
 
-Dateien zum Weiterbauen
-- Burg-Lichtfels.blend: editierbares Blender-Modell
-- Burg-bauen.py: Quellcode der Geometrie, Blender 4.3
-- Burg-Lichtfels-Codeansicht.png und Weisses-Haus-und-Burg-Codeansicht.png:
-  Renderings der exportierten Modelle in den Spielkoordinaten.
-
-Einbau
-Das Modell ist auf den zentralen Torbogen ausgerichtet. Ein Block entspricht
-einer Welteinheit. Die Mitte der Türschwelle des Weißen Hauses liegt bei
-X=0, Z=12,13. Die Mitte der Burgschwelle liegt bei X=0, Z=62,13. Beide
-Eingänge stehen sich damit auf derselben Sichtachse genau 50 Blöcke gegenüber.
-Torhalle, Innenhof und die ebenerdige Große Halle sind als Gehbereiche
-vorgesehen. Türme und Dach sind Architekturkulisse.
-
-Geprüft wurden der Modell-Export, JavaScript-Syntax, der Koordinatenabstand
-sowie der freie Gehweg und ausgewählte Wandkollisionen anhand des Codes.
-Die Screenshots sind Blender-Renderings auf Basis der exportierten Geometrie.
-Ein vollständiger Browser-Spieltest war in der Erstellungsumgebung nicht möglich.
+QUELLE / CREDITS
+„Burg Hohenzollern“ von LAD BW.
+Fotos: Christoph Steffen. © 2018 Landesamt für Denkmalpflege im
+Regierungspräsidium Stuttgart.
+Quelle: https://sketchfab.com/3d-models/burg-hohenzollern-a88eda1be5cc4e58a4268fce708b1a72
+Lizenz: Creative Commons Attribution-NonCommercial (CC BY-NC), siehe Modellseite.
+Umsetzung: Original-GLB in der Spielwelt skaliert, gedreht und positioniert.

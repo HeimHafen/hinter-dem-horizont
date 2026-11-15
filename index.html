@@ -2,7 +2,7 @@
 <html lang="de"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Hinter dem Horizont · Weißes Haus</title>
-<meta name="build" content="Cross Hall V5 · 15.11.2026">
+<meta name="build" content="Cross Hall V6 · 15.11.2026">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#202923;color:#fff7e4;font:16px system-ui}
 canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overflow-wrap:anywhere;position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;pointer-events:none;background:#17201ee8;padding:12px 16px;border-radius:12px}h1{font:24px Georgia;margin:0 0 5px}
@@ -31,8 +31,9 @@ canvas{display:block;touch-action:none}header{max-width:calc(100% - 32px);overfl
 <script type="module">
 import * as THREE from 'three';
 import {baueSpielfigur} from './spielfigur.js?v=2';
-import {baueCrossHallV5,ladeCrossHallAssetsV5,versperrtCrossHallV5} from './cross-hall-v5.js?v=5';
+import {baueCrossHallV5,ladeCrossHallAssetsV5,versperrtCrossHallV5} from './cross-hall-v6.js?v=6';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {setzeHistorischeKonsolenV6} from './cross-hall-furniture-v6.js?v=6';
 import {tor,hofX,hofStart,burgOrt,burgBoden,imHof,baueBurgRundgang} from './burg-rundgang.js?v=5';
 import {burgFuss,aussicht,ladeBurg} from './burg-hohenzollern.js';
 const place=document.querySelector('#place'), gate=document.querySelector('#gate');
@@ -1548,6 +1549,7 @@ async function start(){
   const crossHallAssets=await ladeCrossHallAssetsV5(THREE,renderer);
   crossHallAssets.environment=windowEnvironment.texture;
   baueCrossHallV5(THREE,scene,exterior,renderer,obstacles,crossHallAssets);
+  await setzeHistorischeKonsolenV6(THREE,new GLTFLoader(),exterior,obstacles,crossHallAssets.environment);
 
   function resoluteDesk(x,z){
     const desk=new THREE.Group();
@@ -1973,37 +1975,7 @@ async function start(){
     }
     obstacles.push({x:side*1.35,z:-4.2,w:.84,d:.84});
   }
-  // Cross Hall console, positioned against the wall between room openings.
-  {
-    const x=3.6,z=.52;
-    const finish=new THREE.MeshPhysicalMaterial({map:veneer,roughness:.52,clearcoat:.15});
-    surface(x,1.76,z,1.36,.055,.60,finish);
-    surface(x,1.719,z,1.31,.032,.56,walnut);
-    surface(x,1.62,z,1.20,.16,.46,walnut);
-    surface(x,1.625,z+.245,1.03,.106,.028,finish);
-    surface(x,1.63,z+.266,.13,.035,.026,brass);
-    for(const side of [-1,1])for(const end of [-1,1]){
-      const curve=new THREE.CatmullRomCurve3([
-        new THREE.Vector3(x+side*.54,1.57,z+end*.19),
-        new THREE.Vector3(x+side*.60,1.43,z+end*.22),
-        new THREE.Vector3(x+side*.52,1.15,z+end*.17),
-        new THREE.Vector3(x+side*.58,.91,z+end*.23)
-      ]);
-      const leg=new THREE.Mesh(new THREE.TubeGeometry(curve,20,.039,10,false),walnut);
-      leg.castShadow=leg.receiveShadow=true;
-      exterior.add(leg);
-      oval(x+side*.58,.907,z+end*.23,.044,.044,.034,brass);
-    }
-    const porcelain=new THREE.MeshPhysicalMaterial({map:ceramic,roughness:.32,clearcoat:.35});
-    const profile=[[0,0],[.09,0],[.10,.022],[.145,.10],[.154,.18],[.12,.25],
-      [.073,.30],[.071,.35],[.092,.366],[.093,.38],[.076,.38],[.075,.355],[.061,.326]];
-    const vase=new THREE.Mesh(new THREE.LatheGeometry(
-      profile.map(([radius,height])=>new THREE.Vector2(radius,height)),48),porcelain);
-    vase.position.set(x+.35,1.788,z-.03);
-    vase.castShadow=vase.receiveShadow=true;
-    exterior.add(vase);
-    obstacles.push({x,z,w:1.36,d:.60});
-  }
+  // Old procedurally boxed Cross Hall table + vase removed: replaced by real GLB assets above.
   resoluteDesk(0,-5.22);
   const bounds=[-7.4,-2.47,2.47,7.4].map(x=>[x,18.1]).concat([[-7.4,14.9],[7.4,14.9]]);
   let burgInnen=false;

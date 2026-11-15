@@ -1,3 +1,4 @@
+import {baueBurgLandschaft} from './burg-landschaft.js';
 import {burgMaterialien} from './burg-materialien.js?v=2';
 import {burgFuss} from './burg-hohenzollern.js';
 
@@ -302,25 +303,7 @@ export function baueBurgRundgang(THREE,scene) {
     group.add(blocks);
   }
 
-  // Distant hills establish a horizon for the lookout.
-  const hills=new THREE.Group();
-  hills.position.x=hofX;
-  const ridgeGeometry=new THREE.ConeGeometry(1,1,7);
-  const ridgeMaterials=[mat(0x667b67),mat(0x516a5a),mat(0x82927d)];
-  for(let i=0;i<25;i++){
-    const angle=i*Math.PI*2/25;
-    const radius=75+17*(i%4);
-    const hill=new THREE.Mesh(ridgeGeometry,ridgeMaterials[i%3]);
-    hill.position.set(Math.cos(angle)*radius,-11,27+Math.sin(angle)*radius);
-    hill.scale.set(25+5*(i%4),19+5*(i%5),21+4*(i%6));
-    hill.rotation.y=i*1.72;
-    hills.add(hill);
-  }
-  const valley=new THREE.Mesh(new THREE.CircleGeometry(190,48),mat(0x687956));
-  valley.rotation.x=-Math.PI/2;
-  valley.position.set(0,-19,27);
-  hills.add(valley);
-  scene.add(hills);
+  baueBurgLandschaft(THREE,scene,hofX);
 
   const courtLight=new THREE.PointLight(0xffce92,49,17,2);
   courtLight.position.set(hofX,4.6,25);

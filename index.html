@@ -196,18 +196,13 @@ async function start(){
       for(let row=0;row<9;row++)
         surface(side*x,1.47+row*1.31,12.223,row%2?.54:.69,.22,.077,stone);
     }
-    for(const x of [3.35,4.55]){
-      surface(side*x,3.39,11.98,.21,4.70,.23,stone);
-      surface(side*x,1.15,12.04,.31,.18,.31,stone);
-      surface(side*x,5.68,12.04,.33,.14,.31,stone);
-    }
   }
   for(let x=-22.8;x<=22.8;x+=.46){
     if(Math.abs(x)<7.9)continue;
     surface(x,13.53,12.28,.16,.21,.24,stone);
   }
   // North elevation: three central axes and four outer axes per side.
-  const northAxes=[-20.1,-16.2,-12.25,-8.3,-4.1,0,4.1,8.3,12.25,16.2,20.1];
+  const northAxes=[-20.25,-16.8,-13.35,-9.9,-4.1,0,4.1,9.9,13.35,16.8,20.25];
   const northWindowLevels=[
     {y:2.72,h:2.73,w:1.62,rows:6},
     {y:7.52,h:2.78,w:1.65,rows:6},
@@ -222,7 +217,8 @@ async function start(){
     profile.lineTo(span,y);
     profile.lineTo(-span,y);
     const infill=new THREE.Mesh(new THREE.ShapeGeometry(profile,24),stone);
-    infill.position.set(x,0,12.41);
+    infill.position.set(x,0,12.42);
+    infill.receiveShadow=true;
     exterior.add(infill);
     const points=Array.from({length:25},(_,i)=>{
       const t=i/12-1;
@@ -260,8 +256,7 @@ async function start(){
       for(let row=0;row<=rows;row++){
         surface(x,sill+h*row/rows,12.29,w,.036+(row===rows/2?.035:0),.04,paintedSash);
       }
-      surface(x,sill-.069,12.38,w+.39,.11,.36,stone);
-      surface(x,sill-.146,12.32,w+.24,.059,.25,stone);
+      surface(x,sill-.066,12.22,w+.34,.132,.51,stone);
       surface(x,top+.095,12.34,w+.32,.13,.23,stone);
       if(level===1){
         surface(x,top+.198,12.40,w+.55,.098,.33,stone);
